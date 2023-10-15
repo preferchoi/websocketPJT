@@ -7,38 +7,41 @@ const server = http.createServer(app);
 const io = new Server(server);
 
 const port = 8000
+const cors = require('cors');
+
+app.use(cors());
 
 const serverEndPoint = {
     'mainserver001': {
-        'connnect': false,
+        'connect': false,
         'rooms': {}
     },
     'mainserver002': {
-        'connnect': false,
+        'connect': false,
         'rooms': {}
     },
     'mainserver003': {
-        'connnect': false,
+        'connect': false,
         'rooms': {}
     },
     'mainserver004': {
-        'connnect': false,
+        'connect': false,
         'rooms': {}
     },
     'mainserver005': {
-        'connnect': false,
+        'connect': false,
         'rooms': {}
     },
     'mainserver006': {
-        'connnect': false,
+        'connect': false,
         'rooms': {}
     },
     'mainserver007': {
-        'connnect': false,
+        'connect': false,
         'rooms': {}
     },
     'mainserver008': {
-        'connnect': false,
+        'connect': false,
         'rooms': {}
     }
 }
