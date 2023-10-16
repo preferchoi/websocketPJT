@@ -27,7 +27,7 @@ function App() {
   return (
     <>
       {Object.keys(serverList).map((server, index) => (
-        <div key={index} onClick={() => {handleServerClick(serverList[server]?.name)}}>
+        <div key={index} onClick={() => {serverList[server]?.connect ? handleServerClick(serverList[server]?.name) : alert('다른 서버를 선택해주세요.')}}>
           서버: {serverList[server]?.name} <br/>
           서버 상태: {serverList[server]?.connect? '접속 가능' : '접속 불가능' } <br/>
           접속인원: {serverList[server]?.usersLength}/100
