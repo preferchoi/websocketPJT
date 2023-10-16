@@ -4,14 +4,13 @@ import { useParams } from 'react-router-dom';
 import io from 'socket.io-client';
 
 const Lobby = () => {
-    const [server, setServer] = useState('')
+    const [server, setServer] = useState({ userList: [] })
     const { serverName } = useParams();
     const [WS, setWS] = useState(null);
 
     useEffect(() => {
         const ws = io(`http://localhost:8000/${serverName}`);
         setWS(ws);
-        console.log(ws);
     }, []);
 
     useEffect(() => {
@@ -35,7 +34,13 @@ const Lobby = () => {
 
     return (
         <>
-            {server?.userList} / {serverName}
+            <h1>
+                현재 {serverName} 서버 접속중입니다.
+            </h1>
+            <div>
+                <h3>접속자 목록</h3>
+                {server?.userList.map((el,key) => (<p key={key}>{el}</p>))}
+            </div>
         </>
     )
 }
