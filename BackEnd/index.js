@@ -20,35 +20,43 @@ app.use(cors());
 const serverEndPoint = {
     'mainserver001': {
         'connect': false,
-        'users': {}
+        'users': {},
+        'rooms':{},
     },
     'mainserver002': {
         'connect': false,
-        'users': {}
+        'users': {},
+        'rooms':{},
     },
     'mainserver003': {
         'connect': false,
-        'users': {}
+        'users': {},
+        'rooms':{},
     },
     'mainserver004': {
         'connect': false,
-        'users': {}
+        'users': {},
+        'rooms':{},
     },
     'mainserver005': {
         'connect': false,
-        'users': {}
+        'users': {},
+        'rooms':{},
     },
     'mainserver006': {
         'connect': false,
-        'users': {}
+        'users': {},
+        'rooms':{},
     },
     'mainserver007': {
         'connect': false,
-        'users': {}
+        'users': {},
+        'rooms':{},
     },
     'mainserver008': {
         'connect': false,
-        'users': {}
+        'users': {},
+        'rooms':{},
     }
 }
 
@@ -111,12 +119,33 @@ app.get('/mainserver', (req, res) => {
 app.get('/:nsp/users', (req, res) => {
     const nspName = req.params.nsp;
 
-    if (serverEndPoint[nspName]) {
+    if (serverEndPoint[nspName].connect) {
         const userList = Object.keys(serverEndPoint[nspName]['users']);
         res.json({ userList });
     } else {
         res.status(404).json({ error: 'Namespace not found' });
     }
+});
+
+/*
+    방 생성
+*/
+app.get('/:nsp/create_room', (req, res) => {
+    const nspName = req.params.nsp;
+    const roomName = req?.query.roomName
+
+    const nsp = io.of(`/${nspName}/${roomName}`);
+    console.log(nsp);
+    serverEndPoint[nspName]['rooms'][roomName] = 0
+    nsp.on('connection', (socket) => {
+        serverEndPoint[nspName]['rooms'][roomName] += 1
+
+        socket.on('disconnect', () => {
+            serverEndPoint[nspName]['rooms'][roomName] -= 1;
+        });
+    });
+
+    res.json('sucsses');
 });
 
 /*
