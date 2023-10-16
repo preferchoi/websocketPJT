@@ -70,10 +70,17 @@ Object.keys(serverEndPoint).forEach((key) => {
     nsp.on('connection', (socket) => {
         console.log(`User connected to ${key}`);
         serverEndPoint[key]['users'][socket.id] = socket.handshake
+        io.emit('receive_message', `${socket.id} 님이 서버에 접속했습니다.`);
+
+        socket.on('send_message', (data) => {
+            io.emit('receive_message', data);
+            console.log(data);
+          });
 
         socket.on('disconnect', () => {
             console.log(`User disconnected from ${key}`);
             delete serverEndPoint[key]['users'][socket.id];
+            io.emit('receive_message', `${socket.id} 님이 서버에서 나갔습니다.`);
         });
     });
 });
