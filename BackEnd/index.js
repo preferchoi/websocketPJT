@@ -11,50 +11,95 @@ const cors = require('cors');
 
 app.use(cors());
 
+// 서버 엔드포인트 목록
 const serverEndPoint = {
     'mainserver001': {
         'connect': false,
-        'rooms': {}
+        'users': {}
     },
     'mainserver002': {
         'connect': false,
-        'rooms': {}
+        'users': {}
     },
     'mainserver003': {
         'connect': false,
-        'rooms': {}
+        'users': {}
     },
     'mainserver004': {
         'connect': false,
-        'rooms': {}
+        'users': {}
     },
     'mainserver005': {
         'connect': false,
-        'rooms': {}
+        'users': {}
     },
     'mainserver006': {
         'connect': false,
-        'rooms': {}
+        'users': {}
     },
     'mainserver007': {
         'connect': false,
-        'rooms': {}
+        'users': {}
     },
     'mainserver008': {
         'connect': false,
-        'rooms': {}
+        'users': {}
     }
 }
 
+/*
+네임스페이스 시작 시 connect 활성화 하는 함수
+*/
+function initializeNamespace(key, nsp) {
+    console.log(`Namespace ${key} is initialized.`);
+    serverEndPoint[key].connect = true
+}
+
+/*
+Socket.io 네임스페이스 세팅
+*/
+Object.keys(serverEndPoint).forEach((key) => {
+    const nsp = io.of(`/${key}`);
+    initializeNamespace(key, nsp);
+
+    nsp.on('connection', (socket) => {
+        console.log(`User connected to ${key}`);
+
+        socket.on('disconnect', () => {
+            console.log(`User disconnected from ${key}`);
+        });
+    });
+});
+
+/*
+웹소켓 1차 네임스페이스 목록 불러오는 함수
+요소 형식
+{
+    name: 네임스페이스 이름,
+    connect: 연결 가능 여부,
+    usersLength: 접속 인원 수
+}
+*/
 app.get('/mainserver', (req, res) => {
     const mainServerNames = Object.entries(serverEndPoint).map(([key, value]) => {
         return {
             name: key,
             connect: value.connect,
-            roomsLength: Object.keys(value.rooms).length
+            usersLength: Object.keys(value.users).length
         };
     })
     res.json(mainServerNames);
+});
+
+/*
+* 에러 발생으로 서버 강제 종료 시 처리
+*/
+process.on('uncaughtException', (err) => {
+    console.error('An uncaught exception occurred:', err);
+    Object.keys(serverEndPoint).forEach((key) => {
+        serverEndPoint[key].connect = false;
+    });
+    process.exit(1);
 });
 
 
