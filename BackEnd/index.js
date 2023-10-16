@@ -64,9 +64,11 @@ Object.keys(serverEndPoint).forEach((key) => {
 
     nsp.on('connection', (socket) => {
         console.log(`User connected to ${key}`);
+        serverEndPoint[key][users][socket.id] = socket.handshake
 
         socket.on('disconnect', () => {
             console.log(`User disconnected from ${key}`);
+            delete serverEndPoint[key]['users'][socket.id];
         });
     });
 });
