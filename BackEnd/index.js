@@ -4,7 +4,12 @@ const { Server } = require('socket.io');
 
 const app = express();
 const server = http.createServer(app);
-const io = new Server(server);
+const io = new Server(server, {
+    cors: {
+        origin: "*",  // 클라이언트의 주소
+        methods: ["GET", "POST"]
+    }
+});
 
 const port = 8000
 const cors = require('cors');
@@ -64,7 +69,7 @@ Object.keys(serverEndPoint).forEach((key) => {
 
     nsp.on('connection', (socket) => {
         console.log(`User connected to ${key}`);
-        serverEndPoint[key][users][socket.id] = socket.handshake
+        serverEndPoint[key]['users'][socket.id] = socket.handshake
 
         socket.on('disconnect', () => {
             console.log(`User disconnected from ${key}`);
@@ -93,13 +98,15 @@ app.get('/mainserver', (req, res) => {
     res.json(mainServerNames);
 });
 
-
+/*
+    nsp에 접속한 유저 목록 불러오는 함수
+*/
 app.get('/:nsp/users', (req, res) => {
     const nspName = req.params.nsp;
-    
+
     if (serverEndPoint[nspName]) {
-        const userCount = Object.keys(serverEndPoint[nspName]['users']).length;
-        res.json({ userCount });
+        const userList = Object.keys(serverEndPoint[nspName]['users']);
+        res.json({ userList });
     } else {
         res.status(404).json({ error: 'Namespace not found' });
     }
