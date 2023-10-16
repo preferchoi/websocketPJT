@@ -8,7 +8,7 @@ function App() {
   const [serverList, setServerList] = useState({})
 
   const handleServerClick = (serverName) => {
-    navigate(`/server/${serverName}`);
+    navigate(`/${serverName}`);
   };
 
   useEffect(()=>{
