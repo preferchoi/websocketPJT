@@ -1,14 +1,18 @@
 import { useState, useEffect } from 'react'
 import axios from "axios";
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import io from 'socket.io-client';
+
 
 const Lobby = () => {
     const [server, setServer] = useState({ userList: [] })
     const [WS, setWS] = useState(null);
     const [messages, setMessages] = useState(['1234']);
     const [newMessage, setNewMessage] = useState("");
+    const [roomList, setRoomList] = useState([]);
+    const [roomName, setRoomName] = useState('');
 
+    const navigate = useNavigate();
     const { serverName } = useParams();
 
     useEffect(() => {
@@ -32,10 +36,6 @@ const Lobby = () => {
     };
 
     useEffect(() => {
-        console.log("Messages state changed: ", messages);  // 이 로그를 통해 messages 상태 확인
-    }, [messages]);
-
-    useEffect(() => {
         if (WS) {
             const getData = async () => {
                 try {
@@ -53,8 +53,33 @@ const Lobby = () => {
         }
     }, [WS]);
 
+    const create_room = () => {
+        if (roomName) {
+            axios.get(`http://localhost:8000/${serverName}/create_room`, {
+                'params': {
+                    roomName
+                }
+            }
+            ).then(res => {
+                console.log(res);
+                navigate(`/${serverName}/${roomName}`);
+            })
+        } else {
+            alert('roomName을 입력해주세요.')
+        }
+    }
+
     return (
         <>
+
+            <div>
+                <input
+                    type="text"
+                    value={roomName}
+                    onChange={(e) => setRoomName(e.target.value)}
+                />
+                <button onClick={create_room}>방 만들기</button>
+            </div>
             <h1>
                 현재 {serverName} 서버 접속중입니다.
             </h1>
