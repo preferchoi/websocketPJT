@@ -5,13 +5,35 @@ import io from 'socket.io-client';
 
 const Lobby = () => {
     const [server, setServer] = useState({ userList: [] })
-    const { serverName } = useParams();
     const [WS, setWS] = useState(null);
+    const [messages, setMessages] = useState(['1234']);
+    const [newMessage, setNewMessage] = useState("");
+
+    const { serverName } = useParams();
 
     useEffect(() => {
         const ws = io(`http://localhost:8000/${serverName}`);
         setWS(ws);
+        const addMessage = (message) => {
+            console.log("Received message: ", message);  // 이 로그가 출력되는지 확인
+            setMessages((prevMessages) => [...prevMessages, message]);
+        };
+        ws.on('receive_message', addMessage);
+        return () => {
+            ws.off('receive_message', addMessage);
+        };
     }, []);
+
+    const sendMessage = () => {
+        if (WS) {
+            WS.emit('send_message', newMessage);
+            setNewMessage("");
+        }
+    };
+
+    useEffect(() => {
+        console.log("Messages state changed: ", messages);  // 이 로그를 통해 messages 상태 확인
+    }, [messages]);
 
     useEffect(() => {
         if (WS) {
@@ -19,7 +41,6 @@ const Lobby = () => {
                 try {
                     const res = await axios.get(`http://localhost:8000/${serverName}/users`);
                     setServer(res.data);
-                    console.log(res.data);
                 } catch (error) {
                     console.error(error);
                 }
@@ -39,7 +60,21 @@ const Lobby = () => {
             </h1>
             <div>
                 <h3>접속자 목록</h3>
-                {server?.userList.map((el,key) => (<p key={key}>{el}</p>))}
+                {server?.userList.map((el, key) => (<p key={key}>{el}</p>))}
+            </div>
+
+            <div>
+                {messages.map((message, index) => (
+                    <div key={index}>{message}</div>
+                ))}
+            </div>
+            <div>
+                <input
+                    type="text"
+                    value={newMessage}
+                    onChange={(e) => setNewMessage(e.target.value)}
+                />
+                <button onClick={sendMessage}>Send</button>
             </div>
         </>
     )
