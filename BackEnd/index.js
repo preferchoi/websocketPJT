@@ -93,6 +93,18 @@ app.get('/mainserver', (req, res) => {
     res.json(mainServerNames);
 });
 
+
+app.get('/:nsp/users', (req, res) => {
+    const nspName = req.params.nsp;
+    
+    if (serverEndPoint[nspName]) {
+        const userCount = Object.keys(serverEndPoint[nspName]['users']).length;
+        res.json({ userCount });
+    } else {
+        res.status(404).json({ error: 'Namespace not found' });
+    }
+});
+
 /*
 * 에러 발생으로 서버 강제 종료 시 처리
 */
