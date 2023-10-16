@@ -140,7 +140,7 @@ app.get('/:nsp/users', (req, res) => {
 });
 
 /*
-    미니 방 생성 코드
+    미니 방 생성
     {
         roomName : {
             connection_now: int, // 현재 방 접속 인원 수
@@ -184,7 +184,8 @@ app.get('/:nsp/create_room', (req, res) => {
 });
 
 /*
-* 에러 발생으로 서버 강제 종료 시 처리
+에러 발생으로 서버 강제 종료 시 처리
+pm2를 이용했기 때문에, 종료 시 자동으로 재시작 됨.
 */
 process.on('uncaughtException', (err) => {
     console.error('An uncaught exception occurred:', err);
