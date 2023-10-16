@@ -21,42 +21,42 @@ const serverEndPoint = {
     'mainserver001': {
         'connect': false,
         'users': {},
-        'rooms':{},
+        'rooms': {},
     },
     'mainserver002': {
         'connect': false,
         'users': {},
-        'rooms':{},
+        'rooms': {},
     },
     'mainserver003': {
         'connect': false,
         'users': {},
-        'rooms':{},
+        'rooms': {},
     },
     'mainserver004': {
         'connect': false,
         'users': {},
-        'rooms':{},
+        'rooms': {},
     },
     'mainserver005': {
         'connect': false,
         'users': {},
-        'rooms':{},
+        'rooms': {},
     },
     'mainserver006': {
         'connect': false,
         'users': {},
-        'rooms':{},
+        'rooms': {},
     },
     'mainserver007': {
         'connect': false,
         'users': {},
-        'rooms':{},
+        'rooms': {},
     },
     'mainserver008': {
         'connect': false,
         'users': {},
-        'rooms':{},
+        'rooms': {},
     }
 }
 
@@ -83,7 +83,7 @@ Object.keys(serverEndPoint).forEach((key) => {
         socket.on('send_message', (data) => {
             io.emit('receive_message', data);
             console.log(data);
-          });
+        });
 
         socket.on('disconnect', () => {
             console.log(`User disconnected from ${key}`);
@@ -128,24 +128,47 @@ app.get('/:nsp/users', (req, res) => {
 });
 
 /*
-    방 생성
+    미니 방 생성 코드
+    {
+        roomName : {
+            connection_now: int, // 현재 방 접속 인원 수
+            connection_limit: int, // 방 접속 제한 인원
+            isAbleConnenct: bool // 접속 가능 여부
+        }
+    } 
 */
 app.get('/:nsp/create_room', (req, res) => {
     const nspName = req.params.nsp;
-    const roomName = req?.query.roomName
+    const roomName = req.query.roomName
+    const roomLimit = parseInt(req.query.roomLimit, 10) || 8
 
-    const nsp = io.of(`/${nspName}/${roomName}`);
-    console.log(nsp);
-    serverEndPoint[nspName]['rooms'][roomName] = 0
-    nsp.on('connection', (socket) => {
-        serverEndPoint[nspName]['rooms'][roomName] += 1
+    if (!serverEndPoint[nspName]['rooms'][roomName]) {
+        const nsp = io.of(`/${nspName}/${roomName}`);
+        const info = {
+            'connection_now': 0,
+            'connection_limit': roomLimit,
+            'isAbleConnect': true,
+        };
+        serverEndPoint[nspName]['rooms'][roomName] = info
+        nsp.on('connection', (socket) => {
+            if (info['connection_now'] < info['connection_limit']) {
+                info['connection_now'] += 1
+                if (info['connection_now'] === info['connection_limit']) {
+                    info['isAbleConnect'] = false
+                }
+            }
 
-        socket.on('disconnect', () => {
-            serverEndPoint[nspName]['rooms'][roomName] -= 1;
+            socket.on('disconnect', () => {
+                info['connection_now'] -= 1;
+                if (info['connection_now'] < info['connection_limit']) {
+                    info['isAbleConnect'] = true
+                }
+            });
         });
-    });
-
-    res.json('sucsses');
+        res.json('success');
+    } else {
+        res.json('fail');
+    }
 });
 
 /*
