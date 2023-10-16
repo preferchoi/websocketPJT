@@ -71,25 +71,37 @@ function initializeNamespace(key, nsp) {
 /*
 Socket.io 네임스페이스 세팅
 */
-Object.keys(serverEndPoint).forEach((key) => {
-    const nsp = io.of(`/${key}`);
-    initializeNamespace(key, nsp);
+Object.keys(serverEndPoint).forEach((nspName) => {
+    const nsp = io.of(`/${nspName}`);
+    initializeNamespace(nspName, nsp);
 
     nsp.on('connection', (socket) => {
-        console.log(`User connected to ${key}`);
-        serverEndPoint[key]['users'][socket.id] = socket.handshake
-        io.emit('receive_message', `${socket.id} 님이 서버에 접속했습니다.`);
+        if (Object.keys(serverEndPoint[nspName]['users']).length < 100) {
+            console.log(`User connected to ${nspName}`);
+            serverEndPoint[nspName]['users'][socket.id] = socket.handshake;
+            nsp.emit('receive_message', `${socket.id} 님이 서버에 접속했습니다.`);
 
-        socket.on('send_message', (data) => {
-            io.emit('receive_message', data);
-            console.log(data);
-        });
+            if (Object.keys(serverEndPoint[nspName]['users']).length >= 100) {
+                serverEndPoint[nspName]['connect'] = false
+            }
 
-        socket.on('disconnect', () => {
-            console.log(`User disconnected from ${key}`);
-            delete serverEndPoint[key]['users'][socket.id];
-            io.emit('receive_message', `${socket.id} 님이 서버에서 나갔습니다.`);
-        });
+            socket.on('send_message', (data) => {
+                nsp.emit('receive_message', data);
+                console.log(data);
+            });
+
+            socket.on('disconnect', () => {
+                console.log(`User disconnected from ${nspName}`);
+                delete serverEndPoint[nspName]['users'][socket.id];
+                nsp.emit('receive_message', `${socket.id} 님이 서버에서 나갔습니다.`);
+                if (Object.keys(serverEndPoint[nspName]['users']).length < 100) {
+                    serverEndPoint[nspName]['connect'] = true
+                }
+            });
+        } else {
+            socket.emit('server_full', '서버가 가득 찼습니다. 다른 서버를 이용해주세요.');
+            socket.disconnect();
+        }
     });
 });
 
