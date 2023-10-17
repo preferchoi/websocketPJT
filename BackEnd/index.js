@@ -80,6 +80,7 @@ Object.keys(serverEndPoint).forEach((nspName) => {
             console.log(`User connected to ${nspName}`);
             serverEndPoint[nspName]['users'][socket.id] = socket.handshake;
             nsp.emit('receive_message', `${socket.id} 님이 서버에 접속했습니다.`);
+            nsp.emit('connect_user', '');
 
             if (Object.keys(serverEndPoint[nspName]['users']).length >= 100) {
                 serverEndPoint[nspName]['connect'] = false
