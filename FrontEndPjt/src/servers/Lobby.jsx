@@ -5,11 +5,11 @@ import io from 'socket.io-client';
 
 
 const Lobby = () => {
-    const [server, setServer] = useState({ userList: [] })
     const [WS, setWS] = useState(null);
-    const [messages, setMessages] = useState(['1234']);
-    const [newMessage, setNewMessage] = useState("");
+    const [userList, setUserList] = useState([])
+    const [messages, setMessages] = useState([]);
     const [roomList, setRoomList] = useState([]);
+    const [newMessage, setNewMessage] = useState("");
     const [roomName, setRoomName] = useState('');
 
     const navigate = useNavigate();
@@ -23,6 +23,7 @@ const Lobby = () => {
             setMessages((prevMessages) => [...prevMessages, message]);
         };
         ws.on('receive_message', addMessage);
+        ws.on('connect_user', getUserData)
         return () => {
             ws.off('receive_message', addMessage);
         };
@@ -37,21 +38,32 @@ const Lobby = () => {
 
     useEffect(() => {
         if (WS) {
-            const getData = async () => {
-                try {
-                    const res = await axios.get(`http://localhost:8000/${serverName}/users`);
-                    setServer(res.data);
-                } catch (error) {
-                    console.error(error);
-                }
-            };
-            getData();
+            getUserData();
             return () => {
                 WS.disconnect();
                 setWS(null)
             };
         }
     }, [WS]);
+
+    const getUserData = async () => {
+        console.log('getUserData', userList);
+        try {
+            const res = await axios.get(`http://localhost:8000/${serverName}/users`);
+            setUserList(res.data.userList);
+        } catch (error) {
+            console.error(error);
+        }
+    };
+
+    const getRoomData = async () => {
+        try {
+            const res = await axios.get(`http://localhost:8000/${serverName}/rooms`);
+            setRoomList(res.data);
+        } catch (error) {
+            console.error(error);
+        }
+    };
 
     const create_room = () => {
         if (roomName) {
@@ -85,10 +97,11 @@ const Lobby = () => {
             </h1>
             <div>
                 <h3>접속자 목록</h3>
-                {server?.userList.map((el, key) => (<p key={key}>{el}</p>))}
+                {userList?.map((el, index) => (<p key={index}>{el}</p>))}
             </div>
 
             <div>
+                <h3>채팅 로그</h3>
                 {messages.map((message, index) => (
                     <div key={index}>{message}</div>
                 ))}
