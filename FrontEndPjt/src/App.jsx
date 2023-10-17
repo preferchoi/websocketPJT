@@ -6,13 +6,17 @@ function App() {
   const navigate = useNavigate();
 
   const [serverList, setServerList] = useState({})
+  const [isGetData, setIsGetData] = useState(false)
 
   const handleServerClick = (serverName) => {
     navigate(`/${serverName}`);
   };
 
   useEffect(()=>{
-    const getData = async () => {
+    getData();
+  },[])
+
+  const getData = async () => {
       try {
         const res = await axios.get('http://localhost:8000/mainserver');
         setServerList(res.data);
@@ -21,11 +25,20 @@ function App() {
         console.error(error);
       }
     };
-    getData();
-  },[])
+
+    useEffect(() => {
+      getData();
+    }, [])
+  
+    const handleGetData = () => {
+      setIsGetData(true)
+      getData();
+      setTimeout(() => setIsGetData(false), 3000);
+    };
 
   return (
     <>
+    <button onClick={handleGetData} disabled={isGetData}>서버 상태 갱신</button>
       {Object.keys(serverList).map((server, index) => (
         <div key={index} onClick={() => {serverList[server]?.connect ? handleServerClick(serverList[server]?.name) : alert('다른 서버를 선택해주세요.')}}>
           서버: {serverList[server]?.name} <br/>
