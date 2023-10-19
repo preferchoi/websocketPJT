@@ -24,8 +24,14 @@ const Lobby = () => {
         };
         ws.on('receive_message', addMessage);
         ws.on('connect_user', getUserData)
+        ws.on('disconnect_user', getUserData)
+        ws.on('create_room', getRoomData)
+
         return () => {
             ws.off('receive_message', addMessage);
+            ws.off('connect_user', getUserData);
+            ws.off('disconnect_user', getUserData);
+            ws.off('create_room', getRoomData);
         };
     }, []);
 
@@ -47,7 +53,6 @@ const Lobby = () => {
     }, [WS]);
 
     const getUserData = async () => {
-        console.log('getUserData', userList);
         try {
             const res = await axios.get(`http://localhost:8000/${serverName}/users`);
             setUserList(res.data.userList);
@@ -59,7 +64,8 @@ const Lobby = () => {
     const getRoomData = async () => {
         try {
             const res = await axios.get(`http://localhost:8000/${serverName}/rooms`);
-            setRoomList(res.data);
+            setRoomList(res.data.roomList);
+            console.log('rooms', roomList);
         } catch (error) {
             console.error(error);
         }
@@ -74,6 +80,7 @@ const Lobby = () => {
             }
             ).then(res => {
                 console.log(res);
+                WS.emit('create_room', '');
                 navigate(`/${serverName}/${roomName}`);
             })
         } else {
