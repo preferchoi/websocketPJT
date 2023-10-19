@@ -27,10 +27,6 @@ function App() {
     }
   };
 
-  useEffect(() => {
-    getData();
-  }, [])
-
   const handleGetData = () => {
     setIsGetData(true)
     getData();
