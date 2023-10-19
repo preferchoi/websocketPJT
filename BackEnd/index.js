@@ -91,10 +91,14 @@ Object.keys(serverEndPoint).forEach((nspName) => {
                 console.log(data);
             });
 
+            socket.on('create_room', () => {
+                nsp.emit('create_room', '')
+            })
+
             socket.on('disconnect', () => {
-                console.log(`User disconnected from ${nspName}`);
                 delete serverEndPoint[nspName]['users'][socket.id];
                 nsp.emit('receive_message', `${socket.id} 님이 서버에서 나갔습니다.`);
+                nsp.emit('disconnect_user', '');
                 if (Object.keys(serverEndPoint[nspName]['users']).length < 100) {
                     serverEndPoint[nspName]['connect'] = true
                 }
@@ -139,6 +143,21 @@ app.get('/:nsp/users', (req, res) => {
         res.status(404).json({ error: 'Namespace not found' });
     }
 });
+
+/*
+    nsp에 생성된 방 목록 불러오는 함수
+*/
+app.get('/:nsp/rooms', (req, res) => {
+    const nspName = req.params.nsp;
+
+    if (serverEndPoint[nspName].connect) {
+        const roomList = Object.keys(serverEndPoint[nspName]['rooms']);
+        res.json({ roomList });
+    } else {
+        res.status(404).json({ error: 'Namespace not found' });
+    }
+});
+
 
 /*
     미니 방 생성
