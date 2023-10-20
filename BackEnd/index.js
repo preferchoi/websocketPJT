@@ -195,6 +195,10 @@ app.get('/:nsp/create_room', (req, res) => {
                 if (info['connection_now'] < info['connection_limit']) {
                     info['isAbleConnect'] = true
                 }
+                if (info['connection_now'] <= 0) {
+                    delete serverEndPoint[nspName]['rooms'][roomName];
+                    nsp.disconnect(true)
+                }
             });
         });
         res.json('success');
