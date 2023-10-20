@@ -111,7 +111,7 @@ const Lobby = () => {
             <div>
                 <h3>방 목록</h3>
                 {roomList?.map((el, index) => (
-                    <p key={index}>{el}</p>
+                    <p key={index} onClick={()=>{navigate(`/${serverName}/${el}`)}} >{el}</p>
                 ))}
             </div>
 
