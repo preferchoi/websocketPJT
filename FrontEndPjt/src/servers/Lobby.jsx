@@ -45,6 +45,7 @@ const Lobby = () => {
     useEffect(() => {
         if (WS) {
             getUserData();
+            getRoomData();
             return () => {
                 WS.disconnect();
                 setWS(null)
@@ -65,7 +66,7 @@ const Lobby = () => {
         try {
             const res = await axios.get(`http://localhost:8000/${serverName}/rooms`);
             setRoomList(res.data.roomList);
-            console.log('rooms', roomList);
+            console.log('rooms', res.data.roomList);
         } catch (error) {
             console.error(error);
         }
@@ -105,6 +106,13 @@ const Lobby = () => {
             <div>
                 <h3>접속자 목록</h3>
                 {userList?.map((el, index) => (<p key={index}>{el}</p>))}
+            </div>
+
+            <div>
+                <h3>방 목록</h3>
+                {roomList?.map((el, index) => (
+                    <p key={index}>{el}</p>
+                ))}
             </div>
 
             <div>
