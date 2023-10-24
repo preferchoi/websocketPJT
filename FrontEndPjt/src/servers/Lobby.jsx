@@ -17,7 +17,7 @@ const Lobby = () => {
 
     useEffect(() => {
         const ws = io(`http://localhost:8000/${serverName}`);
-        setWS(ws);
+        setWS(ws);  
         const addMessage = (message) => {
             console.log("Received message: ", message);  // 이 로그가 출력되는지 확인
             setMessages((prevMessages) => [...prevMessages, message]);
@@ -26,12 +26,14 @@ const Lobby = () => {
         ws.on('connect_user', getUserData)
         ws.on('disconnect_user', getUserData)
         ws.on('create_room', getRoomData)
+        ws.on('delete_room', getRoomData)
 
         return () => {
             ws.off('receive_message', addMessage);
             ws.off('connect_user', getUserData);
             ws.off('disconnect_user', getUserData);
             ws.off('create_room', getRoomData);
+            ws.off('delete_room', getRoomData)
         };
     }, []);
 
@@ -91,7 +93,6 @@ const Lobby = () => {
 
     return (
         <>
-
             <div>
                 <input
                     type="text"
