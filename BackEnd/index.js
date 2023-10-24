@@ -87,7 +87,7 @@ Object.keys(serverEndPoint).forEach((nspName) => {
             }
 
             socket.on('send_message', (data) => {
-                nsp.emit('receive_message', data);
+                nsp.emit('receive_message', `${socket.id}: ${data}`);
                 console.log(data);
             });
 
@@ -189,6 +189,10 @@ app.get('/:nsp/create_room', (req, res) => {
                     info['isAbleConnect'] = false
                 }
             }
+
+            socket.on('send_message', (data) => {
+                nsp.emit('receive_message', data);
+            });
 
             socket.on('disconnect', () => {
                 info['connection_now'] -= 1;
