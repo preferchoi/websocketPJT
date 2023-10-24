@@ -198,6 +198,7 @@ app.get('/:nsp/create_room', (req, res) => {
                 if (info['connection_now'] <= 0) {
                     delete serverEndPoint[nspName]['rooms'][roomName];
                     nsp.disconnectSockets(true)
+                    io.of(`${nspName}`).emit('delete_room', '')
                 }
             });
         });
