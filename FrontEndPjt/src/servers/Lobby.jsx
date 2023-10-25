@@ -28,12 +28,17 @@ const Lobby = () => {
         ws.on('create_room', getRoomData)
         ws.on('delete_room', getRoomData)
 
+        getUserData();
+        getRoomData();
+
         return () => {
             ws.off('receive_message', addMessage);
             ws.off('connect_user', getUserData);
             ws.off('disconnect_user', getUserData);
             ws.off('create_room', getRoomData);
             ws.off('delete_room', getRoomData)
+            ws.disconnect();
+            setWS(null)
         };
     }, []);
 
@@ -43,17 +48,6 @@ const Lobby = () => {
             setNewMessage("");
         }
     };
-
-    useEffect(() => {
-        if (WS) {
-            getUserData();
-            getRoomData();
-            return () => {
-                WS.disconnect();
-                setWS(null)
-            };
-        }
-    }, [WS]);
 
     const getUserData = async () => {
         try {
