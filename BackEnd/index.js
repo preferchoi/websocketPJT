@@ -189,12 +189,14 @@ app.get('/:nsp/create_room', (req, res) => {
                     info['isAbleConnect'] = false
                 }
             }
+            nsp.emit('receive_message', `${socket.id} 님이 서버에 접속했습니다.`);
 
             socket.on('send_message', (data) => {
-                nsp.emit('receive_message', data);
+                nsp.emit('receive_message', `${socket.id}: ${data}`);
             });
 
             socket.on('disconnect', () => {
+                nsp.emit('receive_message', `${socket.id} 님이 서버에서 나갔습니다.`);
                 info['connection_now'] -= 1;
                 if (info['connection_now'] < info['connection_limit']) {
                     info['isAbleConnect'] = true
