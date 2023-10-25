@@ -44,3 +44,60 @@ return (
 - Debouncing
 - axios.cancelToken 사용
 - React Query API 활용
+
+
+### 소켓 연결이 두 번씩 되는 문제 발생
+```
+...
+    ws.on('create_room', getRoomData)
+    ws.on('delete_room', getRoomData)
+
+    return () => {
+        ws.off('receive_message', addMessage);
+        ws.off('connect_user', getUserData);
+        ws.off('disconnect_user', getUserData);
+        ws.off('create_room', getRoomData);
+        ws.off('delete_room', getRoomData)
+    };
+}, []);
+
+...
+
+useEffect(() => {
+    if (WS) {
+        getUserData();
+        getRoomData();
+        return () => {
+            WS.disconnect();
+            setWS(null)
+        };
+    }
+}, [WS]);
+
+...
+```
+해당 코드에서 소켓 연결이 두 번씩 처리되는 문제가 발생했다.<br>
+소켓 연결이 완료된 후, 소켓의 변경을 확인하기 위해 useEffect 훅으로 WS를 확인하고, 소켓 접속 시 데이터 호출을 하고, 소켓이 없을 시 라우트 이동 처리를 하려 했다.<br>
+그러나 해당 훅 종료와 동시에 연결을 종료시키게 되었고, 나중에 테스트 도중 중 소켓 선언부에 있어야 할 return문 처리가 잘못된 곳에서 처리되고 있어 연결이 두 번 처리되는 문제를 확인했다.<br>
+해당 문제 해결을 위해 다음과 같이 처리했다.
+```
+...
+    ws.on('create_room', getRoomData)
+    ws.on('delete_room', getRoomData)
+
+    getUserData();
+    getRoomData();
+
+    return () => {
+        ws.off('receive_message', addMessage);
+        ws.off('connect_user', getUserData);
+        ws.off('disconnect_user', getUserData);
+        ws.off('create_room', getRoomData);
+        ws.off('delete_room', getRoomData)
+        ws.disconnect();
+        setWS(null)
+    };
+}, []);
+...
+```
+필요없는 useEffect 훅을 삭제하고, 데이터 호출을 소켓 연결과 동시에 처리했다.
