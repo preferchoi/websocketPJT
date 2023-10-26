@@ -3,6 +3,9 @@ import axios from "axios";
 import { useParams, useNavigate } from 'react-router-dom';
 import io from 'socket.io-client';
 
+import ChatLog from '../components/ChatLog';
+
+import { API_URL, getUser, getRoom } from '../apis';
 
 const Lobby = () => {
     const [WS, setWS] = useState(null);
@@ -16,12 +19,8 @@ const Lobby = () => {
     const { serverName } = useParams();
 
     useEffect(() => {
-        const ws = io(`${process.env.REACT_APP_API_URL}/${serverName}`);
+        const ws = io(`${API_URL}/${serverName}`);
         setWS(ws);
-        const addMessage = (message) => {
-            console.log("Received message: ", message);  // 이 로그가 출력되는지 확인
-            setMessages((prevMessages) => [...prevMessages, message]);
-        };
         ws.on('receive_message', addMessage);
         ws.on('connect_user', getUserData)
         ws.on('disconnect_user', getUserData)
@@ -42,6 +41,11 @@ const Lobby = () => {
         };
     }, []);
 
+    const addMessage = (message) => {
+        console.log("Received message: ", message);  // 이 로그가 출력되는지 확인
+        setMessages((prevMessages) => [...prevMessages, message]);
+    };
+
     const sendMessage = () => {
         if (WS) {
             WS.emit('send_message', newMessage);
@@ -50,27 +54,23 @@ const Lobby = () => {
     };
 
     const getUserData = async () => {
-        try {
-            const res = await axios.get(`${process.env.REACT_APP_API_URL}/${serverName}/users`);
-            setUserList(res.data.userList);
-        } catch (error) {
-            console.error(error);
+        const userList = await getUser(serverName);
+        if (userList != null) {
+            setUserList(userList);
         }
+
     };
 
     const getRoomData = async () => {
-        try {
-            const res = await axios.get(`${process.env.REACT_APP_API_URL}/${serverName}/rooms`);
-            setRoomList(res.data.roomList);
-            console.log('rooms', res.data.roomList);
-        } catch (error) {
-            console.error(error);
+        const roomList = await getRoom(serverName)
+        if (roomList != null) {
+            setRoomList(roomList);
         }
     };
 
     const create_room = () => {
         if (roomName) {
-            axios.get(`${process.env.REACT_APP_API_URL}/${serverName}/create_room`, {
+            axios.get(`${API_URL}/${serverName}/create_room`, {
                 'params': {
                     roomName
                 }
@@ -110,12 +110,8 @@ const Lobby = () => {
                 ))}
             </div>
 
-            <div>
-                <h3>채팅 로그</h3>
-                {messages.map((message, index) => (
-                    <div key={index}>{message}</div>
-                ))}
-            </div>
+            <ChatLog messages={messages} />
+
             <div>
                 <input
                     type="text"

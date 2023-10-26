@@ -2,7 +2,11 @@ import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom';
 import io from 'socket.io-client';
 
+import ChatLog from '../components/ChatLog';
+
 const Room = () => {
+    const API_URL = import.meta.env.VITE_API_URL;
+
     const [WS, setWS] = useState(null);
     const [messages, setMessages] = useState([]);
     const [newMessage, setNewMessage] = useState("");
@@ -11,7 +15,7 @@ const Room = () => {
 
     const { nspName, roomName } = useParams();
     useEffect(() => {
-        const ws = io(`${process.env.REACT_APP_API_URL}/${nspName}/${roomName}`);
+        const ws = io(`${API_URL}/${nspName}/${roomName}`);
         setWS(ws);
         const addMessage = (message) => {
             console.log("Received message: ", message);  // 이 로그가 출력되는지 확인
@@ -35,12 +39,7 @@ const Room = () => {
             <p onClick={() => { navigate(`/${nspName}`) }}>나가기</p>
             <h2>roomName: {roomName}</h2>
 
-            <div>
-                <h3>채팅 로그</h3>
-                {messages.map((message, index) => (
-                    <div key={index}>{message}</div>
-                ))}
-            </div>
+            <ChatLog messages={messages} />
 
             <div>
                 <input
