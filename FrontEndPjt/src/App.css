@@ -1,0 +1,46 @@
+.coolTime {
+    display: block;
+    margin: 40px auto 20px; /* 상단 여백을 조정하여 serverList와 떨어트립니다 */
+    padding: 10px 20px;
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.coolTime:disabled {
+    background-color: #ccc;
+    cursor: not-allowed;
+}
+
+.serverList {
+    display: grid; /* flex를 grid로 변경 */
+    grid-template-columns: 1fr 1fr; /* 2개의 칼럼으로 나눕니다 */
+    gap: 20px;
+    width: 500px;
+    margin: 0 auto;
+}
+
+.serverCell {
+    background-color: #f4f4f4;
+    padding: 10px;
+    border: 1px solid #ddd;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.serverCell:hover {
+    background-color: #e9e9e9;
+}
+
+body {
+    display: flex;
+    flex-direction: column; /* 수직 방향으로 아이템을 배열 */
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    font-family: 'Arial', sans-serif;
+    background-color: #f9f9f9;
+}

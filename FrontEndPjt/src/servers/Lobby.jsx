@@ -7,6 +7,8 @@ import ChatLog from '../components/ChatLog';
 
 import { API_URL, getUser, getRoom } from '../apis';
 
+import './Lobby.css'
+
 const Lobby = () => {
     const [WS, setWS] = useState(null);
     const [userList, setUserList] = useState([])
@@ -87,38 +89,43 @@ const Lobby = () => {
 
     return (
         <>
-            <div>
-                <input
-                    type="text"
-                    value={roomName}
-                    onChange={(e) => setRoomName(e.target.value)}
-                />
-                <button onClick={create_room}>방 만들기</button>
-            </div>
-            <h1>
+            <h1 className='title'>
                 현재 {serverName} 서버 접속중입니다.
             </h1>
-            <div>
-                <h3>접속자 목록</h3>
-                {userList?.map((el, index) => (<p key={index}>{el}</p>))}
+
+            <div className="main">
+                <div className='userList'>
+                    <h3>접속자 목록</h3>
+                    {userList?.map((el, index) => (<p key={index}>{el}</p>))}
+                </div>
+                <div className="room">
+                    <h3>방 목록</h3>
+                    <div className='roomList'>
+                        {roomList?.map((el, index) => (
+                            <div className='roomCell' key={index} onClick={() => { navigate(`/${serverName}/${el}`) }} >{el}</div>
+                        ))}
+                    </div>
+                    <div className='createRoom'>
+                        <input
+                            type="text"
+                            value={roomName}
+                            onChange={(e) => setRoomName(e.target.value)}
+                        />
+                        <button onClick={create_room}>방 만들기</button>
+                    </div>
+                </div>
             </div>
 
-            <div>
-                <h3>방 목록</h3>
-                {roomList?.map((el, index) => (
-                    <p key={index} onClick={() => { navigate(`/${serverName}/${el}`) }} >{el}</p>
-                ))}
-            </div>
-
-            <ChatLog messages={messages} />
-
-            <div>
-                <input
-                    type="text"
-                    value={newMessage}
-                    onChange={(e) => setNewMessage(e.target.value)}
-                />
-                <button onClick={sendMessage}>Send</button>
+            <div className="chat">
+                <ChatLog messages={messages} />
+                <div className='chatInput'>
+                    <input
+                        type="text"
+                        value={newMessage}
+                        onChange={(e) => setNewMessage(e.target.value)}
+                    />
+                    <button onClick={sendMessage}>Send</button>
+                </div>
             </div>
         </>
     )

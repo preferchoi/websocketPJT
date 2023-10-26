@@ -1,8 +1,11 @@
 import { useState, useEffect } from 'react'
 import axios from "axios";
 import { useNavigate } from 'react-router-dom';
+import './App.css';
 
 function App() {
+  const API_URL = import.meta.env.VITE_API_URL;
+
   const navigate = useNavigate();
 
   const [serverList, setServerList] = useState({})
@@ -19,7 +22,7 @@ function App() {
 
   const getData = async () => {
     try {
-      const res = await axios.get(`${process.env.REACT_APP_API_URL}/mainserver`);
+      const res = await axios.get(`${API_URL}/mainserver`);
       setServerList(res.data);
       console.log(res.data);
     } catch (error) {
@@ -50,19 +53,16 @@ function App() {
 
   return (
     <>
-    <p>
-      {coolTime}초 뒤 갱신 가능
-    </p>
-      <button onClick={handleGetData} disabled={isGetData}>서버 상태 갱신</button>
-      <hr />
-      {Object.keys(serverList).map((server, index) => (
-        <div key={index} onClick={() => { serverList[server]?.connect ? handleServerClick(serverList[server]?.name) : alert('다른 서버를 선택해주세요.') }}>
-          서버: {serverList[server]?.name} <br />
-          서버 상태: {serverList[server]?.connect ? '접속 가능' : '접속 불가능'} <br />
-          접속인원: {serverList[server]?.usersLength}/100
-          <hr />
-        </div>
-      ))}
+      <button className='coolTime' onClick={handleGetData} disabled={isGetData}>{coolTime ? `${coolTime}초 뒤 갱신 가능` : '서버 상태 갱신'}</button>
+      <div className='serverList'>
+        {Object.keys(serverList).map((server, index) => (
+          <div className='serverCell' key={index} onClick={() => { serverList[server]?.connect ? handleServerClick(serverList[server]?.name) : alert('다른 서버를 선택해주세요.') }}>
+            서버: {serverList[server]?.name} <br />
+            서버 상태: {serverList[server]?.connect ? '접속 가능' : '접속 불가능'} <br />
+            접속인원: {serverList[server]?.usersLength}/100
+          </div>
+        ))}
+      </div>
     </>
   )
 }

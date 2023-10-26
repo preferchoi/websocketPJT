@@ -4,6 +4,8 @@ import io from 'socket.io-client';
 
 import ChatLog from '../components/ChatLog';
 
+import './room.css'
+
 const Room = () => {
     const API_URL = import.meta.env.VITE_API_URL;
 
@@ -36,18 +38,18 @@ const Room = () => {
     };
     return (
         <>
-            <p onClick={() => { navigate(`/${nspName}`) }}>나가기</p>
-            <h2>roomName: {roomName}</h2>
-
-            <ChatLog messages={messages} />
-
-            <div>
-                <input
-                    type="text"
-                    value={newMessage}
-                    onChange={(e) => setNewMessage(e.target.value)}
-                />
-                <button onClick={sendMessage}>Send</button>
+            <h2>현재 {roomName} 방 접속중입니다.</h2>
+            <button className='exit' onClick={() => { navigate(`/${nspName}`) }}>나가기</button>
+            <div className="chat">
+                <ChatLog messages={messages} />
+                <div>
+                    <input
+                        type="text"
+                        value={newMessage}
+                        onChange={(e) => setNewMessage(e.target.value)}
+                    />
+                    <button onClick={sendMessage}>Send</button>
+                </div>
             </div>
         </>
     )
