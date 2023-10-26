@@ -11,7 +11,7 @@ const Room = () => {
 
     const { nspName, roomName } = useParams();
     useEffect(() => {
-        const ws = io(`http://localhost:8000/${nspName}/${roomName}`);
+        const ws = io(`${process.env.REACT_APP_API_URL}/${nspName}/${roomName}`);
         setWS(ws);
         const addMessage = (message) => {
             console.log("Received message: ", message);  // 이 로그가 출력되는지 확인
@@ -32,7 +32,7 @@ const Room = () => {
     };
     return (
         <>
-            <p onClick={()=> {navigate(`/${nspName}`)}}>나가기</p>
+            <p onClick={() => { navigate(`/${nspName}`) }}>나가기</p>
             <h2>roomName: {roomName}</h2>
 
             <div>

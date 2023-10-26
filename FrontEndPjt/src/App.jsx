@@ -19,7 +19,7 @@ function App() {
 
   const getData = async () => {
     try {
-      const res = await axios.get('http://localhost:8000/mainserver');
+      const res = await axios.get(`${process.env.REACT_APP_API_URL}/mainserver`);
       setServerList(res.data);
       console.log(res.data);
     } catch (error) {

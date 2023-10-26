@@ -16,8 +16,8 @@ const Lobby = () => {
     const { serverName } = useParams();
 
     useEffect(() => {
-        const ws = io(`http://localhost:8000/${serverName}`);
-        setWS(ws);  
+        const ws = io(`${process.env.REACT_APP_API_URL}/${serverName}`);
+        setWS(ws);
         const addMessage = (message) => {
             console.log("Received message: ", message);  // 이 로그가 출력되는지 확인
             setMessages((prevMessages) => [...prevMessages, message]);
@@ -51,7 +51,7 @@ const Lobby = () => {
 
     const getUserData = async () => {
         try {
-            const res = await axios.get(`http://localhost:8000/${serverName}/users`);
+            const res = await axios.get(`${process.env.REACT_APP_API_URL}/${serverName}/users`);
             setUserList(res.data.userList);
         } catch (error) {
             console.error(error);
@@ -60,7 +60,7 @@ const Lobby = () => {
 
     const getRoomData = async () => {
         try {
-            const res = await axios.get(`http://localhost:8000/${serverName}/rooms`);
+            const res = await axios.get(`${process.env.REACT_APP_API_URL}/${serverName}/rooms`);
             setRoomList(res.data.roomList);
             console.log('rooms', res.data.roomList);
         } catch (error) {
@@ -70,7 +70,7 @@ const Lobby = () => {
 
     const create_room = () => {
         if (roomName) {
-            axios.get(`http://localhost:8000/${serverName}/create_room`, {
+            axios.get(`${process.env.REACT_APP_API_URL}/${serverName}/create_room`, {
                 'params': {
                     roomName
                 }
@@ -106,7 +106,7 @@ const Lobby = () => {
             <div>
                 <h3>방 목록</h3>
                 {roomList?.map((el, index) => (
-                    <p key={index} onClick={()=>{navigate(`/${serverName}/${el}`)}} >{el}</p>
+                    <p key={index} onClick={() => { navigate(`/${serverName}/${el}`) }} >{el}</p>
                 ))}
             </div>
 
