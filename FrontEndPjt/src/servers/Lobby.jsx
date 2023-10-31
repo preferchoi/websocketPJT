@@ -44,8 +44,7 @@ const Lobby = () => {
     }, []);
 
     const addMessage = (message) => {
-        console.log("Received message: ", message);  // 이 로그가 출력되는지 확인
-        setMessages((prevMessages) => [...prevMessages, message]);
+        setMessages((prevMessages) => [...prevMessages, {'type':'text', 'content':message}]);
     };
 
     const sendMessage = () => {
