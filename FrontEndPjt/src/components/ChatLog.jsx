@@ -5,9 +5,11 @@ const ChatLog = ({ messages }) => {
         <>
             <h3>채팅 로그</h3>
             <div className='chatLog'>
-                {messages.map((message, index) => (
-                    <div key={index}>{message}</div>
-                ))}
+                {messages.map((message, index) => {
+                    if (message.type == 'text') {
+                        return <div key={index}>{message.content}</div>
+                    }
+                })}
             </div>
         </>
     );
