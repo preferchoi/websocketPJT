@@ -195,6 +195,10 @@ app.get('/:nsp/create_room', (req, res) => {
                 nsp.emit('receive_message', `${socket.id}: ${data}`);
             });
 
+            socket.on('send_image', (data) => {
+                nsp.emit('receive_image', data);
+            });
+
             socket.on('disconnect', () => {
                 nsp.emit('receive_message', `${socket.id} 님이 서버에서 나갔습니다.`);
                 info['connection_now'] -= 1;
