@@ -106,3 +106,26 @@ useEffect(() => {
 후일 배포 가능성이 있어, .env 파일을 만들어 네트워크 변수를 관리하고자 했다.<br>
 REACT_APP_ 접두어를 붙여 변수를 선언하고 사용하고자 했는데, 작동하지 않았다.<br>
 찾아 보니, 변수 접두어를 REACT_APP_ 가 아닌 VITE_ 로 사용해야 한다는 것을 알게 되었다.
+
+### 웹 소켓으로 받는 메세지 형태 정의
+채팅 기능 제작 도중, 이미지를 주고 받을 수 있게 만들었다.<br>
+이미지는 blob 형태로 전송하고, 받을때는 ArrayBuffer 형태로 받고 있다.<br>
+기존의 경우, 그냥 str 타입으로 텍스트 메세지를 받았는데, 텍스트와 이미지의 구분이 가지 않는 문제가 있었다.<br>
+그렇기 때문에, 소켓에서 데이터를 받을 때, Object 형태로 데이터를 저장하게끔 하였다.
+```
+...
+const addMessage = (message) => {
+    setMessages((prevMessages) => [...prevMessages, {'type':'text', 'content':message}]);
+};
+
+const addImage = (message) => {
+console.log(message);
+    setMessages((prevMessages) => [...prevMessages, {'type':'image', 'content':message}]);
+}
+
+ws.on('receive_message', addMessage);
+ws.on('receive_image', addImage);
+...
+```
+다음과 같이 처리할 경우, 메세지의 타입을 구분할 수 있고, 추후 이미지가 아닌 파일을 전송할 경우도 쉽게 확장할 수 있을 것이다.<br>
+향후 확장 가능성을 판단하고 개발한다는 것의 중요성을 알 수 있게 되었다.
