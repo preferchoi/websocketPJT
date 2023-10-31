@@ -13,9 +13,12 @@ const Room = () => {
     const [messages, setMessages] = useState([]);
     const [newMessage, setNewMessage] = useState("");
 
+    const [newImage, setNewImage] = useState(null); // 이미지 파일
+
     const navigate = useNavigate();
 
     const { nspName, roomName } = useParams();
+    
     useEffect(() => {
         const ws = io(`${API_URL}/${nspName}/${roomName}`);
         setWS(ws);
@@ -30,10 +33,33 @@ const Room = () => {
         };
     }, []);
 
+    const handleImageUpload = (el) => {
+        const file = el.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.readAsArrayBuffer(file);
+            reader.onload = () => {
+                setNewImage(reader.result);
+            };
+        }
+    }
+
     const sendMessage = () => {
         if (WS) {
             WS.emit('send_message', newMessage);
             setNewMessage("");
+        }
+    };
+
+    const sendImage = () => {
+        if (!newImage) {
+            alert('이미지를 입력해주세요.')
+        }
+        if (WS && newImage) {
+            const blob = new Blob([newImage], { type: 'image/png' })
+            // WS.emit('send_image', blob);
+            WS.emit('send_message', blob); // check image data send
+            setNewImage(null);
         }
     };
     return (
@@ -49,6 +75,12 @@ const Room = () => {
                         onChange={(e) => setNewMessage(e.target.value)}
                     />
                     <button onClick={sendMessage}>Send</button>
+                    <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleImageUpload}
+                    />
+                    <button onClick={sendImage}>Image</button>
                 </div>
             </div>
         </>
