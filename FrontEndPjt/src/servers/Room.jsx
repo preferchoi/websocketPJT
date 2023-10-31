@@ -22,11 +22,18 @@ const Room = () => {
     useEffect(() => {
         const ws = io(`${API_URL}/${nspName}/${roomName}`);
         setWS(ws);
+
         const addMessage = (message) => {
-            console.log("Received message: ", message);  // 이 로그가 출력되는지 확인
             setMessages((prevMessages) => [...prevMessages, {'type':'text', 'content':message}]);
         };
+
+        const addImage = (message) => {
+            console.log(message);
+            setMessages((prevMessages) => [...prevMessages, {'type':'image', 'content':message}]);
+        }
+
         ws.on('receive_message', addMessage);
+        ws.on('receive_image', addImage);
         return () => {
             ws.off('receive_message', addMessage);
             ws.disconnect();
@@ -57,8 +64,7 @@ const Room = () => {
         }
         if (WS && newImage) {
             const blob = new Blob([newImage], { type: 'image/png' })
-            // WS.emit('send_image', blob);
-            WS.emit('send_message', blob); // check image data send
+            WS.emit('send_image', blob);
             setNewImage(null);
         }
     };
