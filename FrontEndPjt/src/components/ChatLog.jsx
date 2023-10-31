@@ -8,6 +8,12 @@ const ChatLog = ({ messages }) => {
                 {messages.map((message, index) => {
                     if (message.type == 'text') {
                         return <div key={index}>{message.content}</div>
+                    } else if (message.type === 'image') {
+                        const blob = new Blob([message.content], { type: 'image/jpeg' })
+                        const url = URL.createObjectURL(blob);
+                        return <img key={index} src={url} alt="img" />;
+                    } else {
+                        return null
                     }
                 })}
             </div>
