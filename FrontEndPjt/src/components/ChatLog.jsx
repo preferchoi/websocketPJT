@@ -11,7 +11,7 @@ const ChatLog = ({ messages }) => {
                     } else if (message.type === 'image') {
                         const blob = new Blob([message.content], { type: 'image/jpeg' })
                         const url = URL.createObjectURL(blob);
-                        return <img key={index} src={url} alt="img" />;
+                        return <div key={index}><img src={url} alt="img" /></div>
                     } else {
                         return null
                     }

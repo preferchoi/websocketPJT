@@ -1,6 +1,7 @@
 .coolTime {
     display: block;
-    margin: 40px auto 20px; /* 상단 여백을 조정하여 serverList와 떨어트립니다 */
+    margin: 40px auto 20px;
+    /* 상단 여백을 조정하여 serverList와 떨어트립니다 */
     padding: 10px 20px;
     background-color: #4CAF50;
     color: white;
@@ -15,8 +16,10 @@
 }
 
 .serverList {
-    display: grid; /* flex를 grid로 변경 */
-    grid-template-columns: 1fr 1fr; /* 2개의 칼럼으로 나눕니다 */
+    display: grid;
+    /* flex를 grid로 변경 */
+    grid-template-columns: 1fr 1fr;
+    /* 2개의 칼럼으로 나눕니다 */
     gap: 20px;
     width: 500px;
     margin: 0 auto;
@@ -37,7 +40,8 @@
 
 body {
     display: flex;
-    flex-direction: column; /* 수직 방향으로 아이템을 배열 */
+    flex-direction: column;
+    /* 수직 방향으로 아이템을 배열 */
     justify-content: center;
     align-items: center;
     height: 100vh;

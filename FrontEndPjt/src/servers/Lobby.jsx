@@ -44,7 +44,7 @@ const Lobby = () => {
     }, []);
 
     const addMessage = (message) => {
-        setMessages((prevMessages) => [...prevMessages, {'type':'text', 'content':message}]);
+        setMessages((prevMessages) => [...prevMessages, { 'type': 'text', 'content': message }]);
     };
 
     const sendMessage = () => {

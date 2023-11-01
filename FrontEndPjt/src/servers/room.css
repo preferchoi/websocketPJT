@@ -3,7 +3,8 @@
     display: flex;
     flex-direction: column;
     justify-content: space-between;
-    height: 80vh; /* 높이는 적절하게 조정해주세요 */
+    height: 80vh;
+    /* 높이는 적절하게 조정해주세요 */
     border: 1px solid #ddd;
     padding: 20px;
 }

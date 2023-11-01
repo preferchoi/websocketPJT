@@ -18,18 +18,18 @@ const Room = () => {
     const navigate = useNavigate();
 
     const { nspName, roomName } = useParams();
-    
+
     useEffect(() => {
         const ws = io(`${API_URL}/${nspName}/${roomName}`);
         setWS(ws);
 
         const addMessage = (message) => {
-            setMessages((prevMessages) => [...prevMessages, {'type':'text', 'content':message}]);
+            setMessages((prevMessages) => [...prevMessages, { 'type': 'text', 'content': message }]);
         };
 
         const addImage = (message) => {
             console.log(message);
-            setMessages((prevMessages) => [...prevMessages, {'type':'image', 'content':message}]);
+            setMessages((prevMessages) => [...prevMessages, { 'type': 'image', 'content': message }]);
         }
 
         ws.on('receive_message', addMessage);
