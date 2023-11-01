@@ -16,6 +16,8 @@ const cors = require('cors');
 
 app.use(cors());
 
+const sharp = require('sharp');
+
 // 서버 엔드포인트 목록
 const serverEndPoint = {
     'mainserver001': {
@@ -195,8 +197,15 @@ app.get('/:nsp/create_room', (req, res) => {
                 nsp.emit('receive_message', `${socket.id}: ${data}`);
             });
 
-            socket.on('send_image', (data) => {
-                nsp.emit('receive_image', data);
+            socket.on('send_image', async (data) => {
+                // 이미지 데이터 저장 후, 원본 파일 저장 경로 추가 전송 필요함
+                const resizedImageBuffer = await sharp(data)
+                    .resize({
+                        width: 200,
+                        fit: 'inside'
+                    })
+                    .toBuffer();
+                nsp.emit('receive_image', resizedImageBuffer);
             });
 
             socket.on('disconnect', () => {
