@@ -81,7 +81,7 @@ socket.on('send_image', async (data) => {
         message: String, // text, blob, file ...
     }
 }
- */
+*/
 
 socket.on('send', (data) => {
     if (data.type=='message') {
@@ -92,3 +92,9 @@ socket.on('send', (data) => {
 })
 ```
 이렇게 처리했다면, 하나의 이벤트 안에서 많은 것들을 처리할 수 있어 코드 효율성이 증대되었을 것이라 생각한다.
+
+
+### sharp.js
+이미지 리사이징을 위해 sharp.js를 사용했다.<br>
+이미지 조작을 위한 js 라이브러이는 Jimp, GraphicsMagick 등이 있는데, sharp.js는 libvips를 사용해 ImageMagick를 사용하는 것보다 4~5배 빠르다고 한다.
+이 라이브러리를 활용해 이미지의 메타데이터를 확인하거나, 크기 조정, 합성, 조작, 색 보정 등을 처리할 수 있다고 한다.
