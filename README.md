@@ -12,3 +12,20 @@
 
 ## BackEnd
 사용 기술: express.js, webSocket
+
+## 특기점
+
+### throttle을 이용한 서버 갱신
+![throttle](assets/throttle.gif)
+
+### 로비 채팅 기능
+![lobby_chat](assets\lobby_chat.gif)
+
+### 방 생성 시 목록 자동 갱신
+![create](assets\create-room.gif)
+
+### 방 채팅 기능
+![room](assets\room-chat.gif)
+
+### 방 이미지 전송 기능
+![room-send-img](assets\room-send-img.gif)
