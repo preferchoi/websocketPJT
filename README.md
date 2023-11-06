@@ -19,13 +19,13 @@
 ![throttle](assets/throttle.gif)
 
 ### 로비 채팅 기능
-![lobby_chat](assets\lobby_chat.gif)
+![lobby_chat](assets\lobbyChat.gif)
 
 ### 방 생성 시 목록 자동 갱신
-![create](assets\create-room.gif)
+![create](assets\createRoom.gif)
 
 ### 방 채팅 기능
-![room](assets\room-chat.gif)
+![room](assets\roomChat.gif)
 
 ### 방 이미지 전송 기능
-![room-send-img](assets\room-send-img.gif)
+![room-send-img](assets\roomSendImg.gif)
