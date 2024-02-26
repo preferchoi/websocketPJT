@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import axios from "axios";
 import { useNavigate } from 'react-router-dom';
 import './App.css';
+import { Button } from "@chakra-ui/react";
 
 function App() {
   const API_URL = import.meta.env.VITE_API_URL;
@@ -35,7 +36,7 @@ function App() {
     getData();
     setCoolTime(3)
     setTimeout(() => {
-      setIsGetData(false)
+      setIsGetData(false) 
     }, 3000);
   };
 
@@ -53,7 +54,7 @@ function App() {
 
   return (
     <>
-      <button className='coolTime' onClick={handleGetData} disabled={isGetData}>{coolTime ? `${coolTime}초 뒤 갱신 가능` : '서버 상태 갱신'}</button>
+      <Button colorScheme='green' className='coolTime' onClick={handleGetData} disabled={isGetData}>{coolTime ? `${coolTime}초 뒤 갱신 가능` : '서버 상태 갱신'}</Button>
       <div className='serverList'>
         {Object.keys(serverList).map((server, index) => (
           <div className='serverCell' key={index} onClick={() => { serverList[server]?.connect ? handleServerClick(serverList[server]?.name) : alert('다른 서버를 선택해주세요.') }}>
