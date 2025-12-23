@@ -19,6 +19,41 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 const sharp = require('sharp');
+const MAX_MESSAGE_LENGTH = 500;
+const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
+
+function emitSocketError(socket, message) {
+    socket.emit('error', { message });
+}
+
+function normalizeImagePayload(data) {
+    if (!data) {
+        return { error: 'image payload is required' };
+    }
+
+    const payload = data && data.data ? data.data : data;
+
+    if (Buffer.isBuffer(payload)) {
+        return { buffer: payload, size: payload.length };
+    }
+
+    if (payload instanceof ArrayBuffer) {
+        const buffer = Buffer.from(payload);
+        return { buffer, size: buffer.length };
+    }
+
+    if (ArrayBuffer.isView(payload)) {
+        const buffer = Buffer.from(payload.buffer, payload.byteOffset, payload.byteLength);
+        return { buffer, size: payload.byteLength };
+    }
+
+    if (typeof payload === 'string') {
+        const buffer = Buffer.from(payload, 'base64');
+        return { buffer, size: buffer.length };
+    }
+
+    return { error: 'image payload type is invalid' };
+}
 
 // 서버 엔드포인트 목록
 const serverEndPoint = {
@@ -91,6 +126,14 @@ Object.keys(serverEndPoint).forEach((nspName) => {
             }
 
             socket.on('send_message', (data) => {
+                if (typeof data !== 'string') {
+                    emitSocketError(socket, 'message type is invalid');
+                    return;
+                }
+                if (data.length > MAX_MESSAGE_LENGTH) {
+                    emitSocketError(socket, 'message length exceeds limit');
+                    return;
+                }
                 nsp.emit('receive_message', `${socket.id}: ${data}`);
                 console.log(data);
             });
@@ -232,23 +275,36 @@ app.post('/:nsp/create_room', (req, res) => {
             nsp.emit('receive_message', `${socket.id} 님이 서버에 접속했습니다.`);
 
             socket.on('send_message', (data) => {
+                if (typeof data !== 'string') {
+                    emitSocketError(socket, 'message type is invalid');
+                    return;
+                }
+                if (data.length > MAX_MESSAGE_LENGTH) {
+                    emitSocketError(socket, 'message length exceeds limit');
+                    return;
+                }
                 nsp.emit('receive_message', `${socket.id}: ${data}`);
             });
 
             socket.on('send_image', async (data) => {
                 // 이미지 데이터 저장 후, 원본 파일 저장 경로 추가 전송 필요함
-                const payload = data && data.data ? data.data : data;
-                if (!payload) {
+                const normalized = normalizeImagePayload(data);
+                if (normalized.error) {
+                    emitSocketError(socket, normalized.error);
                     return;
                 }
-                const inputBuffer = Buffer.isBuffer(payload) ? payload : Buffer.from(payload);
+                if (normalized.size > MAX_IMAGE_BYTES) {
+                    emitSocketError(socket, 'image size exceeds limit');
+                    return;
+                }
+                const inputBuffer = normalized.buffer;
                 const resizedImageBuffer = await sharp(inputBuffer)
                     .resize({
                         width: 200,
                         fit: 'inside'
                     })
                     .toBuffer();
-                const mimeType = data && data.mimeType ? data.mimeType : 'image/jpeg';
+                const mimeType = data && typeof data.mimeType === 'string' ? data.mimeType : 'image/jpeg';
                 nsp.emit('receive_image', { data: resizedImageBuffer, mimeType });
             });
 
