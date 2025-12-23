@@ -36,6 +36,7 @@ const Room = () => {
         ws.on('receive_image', addImage);
         return () => {
             ws.off('receive_message', addMessage);
+            ws.off('receive_image', addImage);
             ws.disconnect();
         };
     }, []);
