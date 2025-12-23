@@ -262,7 +262,7 @@ app.post('/:nsp/create_room', (req, res) => {
                     delete serverEndPoint[nspName]['rooms'][roomName];
                     nsp.removeAllListeners('connection');
                     nsp.disconnectSockets(true)
-                    io.of(`${nspName}`).emit('delete_room', '')
+                    io.of(`/${nspName}`).emit('delete_room', '')
                 }
             });
         });
