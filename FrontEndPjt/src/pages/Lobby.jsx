@@ -17,6 +17,7 @@ const Lobby = () => {
     const [roomLoading, setRoomLoading] = useState(false);
     const [newMessage, setNewMessage] = useState("");
     const [roomName, setRoomName] = useState('');
+    const [roomNameError, setRoomNameError] = useState('');
 
     const navigate = useNavigate();
     const { serverName } = useParams();
@@ -86,20 +87,46 @@ const Lobby = () => {
         }
     };
 
+    const roomNamePattern = /^[A-Za-z0-9가-힣_-]+$/;
+    const minRoomNameLength = 1;
+    const maxRoomNameLength = 20;
+
+    const validateRoomName = (value) => {
+        const trimmedValue = value.trim();
+        if (!trimmedValue) {
+            return '방 이름을 입력해주세요.';
+        }
+        if (trimmedValue.length < minRoomNameLength || trimmedValue.length > maxRoomNameLength) {
+            return '방 이름은 1~20자로 입력해주세요.';
+        }
+        if (!roomNamePattern.test(trimmedValue)) {
+            return '방 이름은 영문/숫자/한글/언더바/하이픈만 가능합니다.';
+        }
+        return '';
+    };
+
+    const handleRoomNameChange = (event) => {
+        const nextValue = event.target.value;
+        setRoomName(nextValue);
+        setRoomNameError(validateRoomName(nextValue));
+    };
+
     const create_room = async () => {
-        if (!roomName) {
-            alert('roomName을 입력해주세요.')
+        const trimmedRoomName = roomName.trim();
+        const validationMessage = validateRoomName(trimmedRoomName);
+        if (validationMessage) {
+            setRoomNameError(validationMessage);
             return;
         }
 
         try {
             const res = await axios.post(`${API_URL}/${serverName}/create_room`, {
-                roomName
+                roomName: trimmedRoomName
             });
             const isSuccess = res?.data?.success;
             if (isSuccess) {
                 WS.emit('create_room', '');
-                navigate(`/${serverName}/${roomName}`);
+                navigate(`/${serverName}/${trimmedRoomName}`);
                 return;
             }
             const failMessage = res?.data?.message || '방 생성에 실패했습니다.';
@@ -138,8 +165,12 @@ const Lobby = () => {
                         <input
                             type="text"
                             value={roomName}
-                            onChange={(e) => setRoomName(e.target.value)}
+                            onChange={handleRoomNameChange}
+                            placeholder="방 이름 (1~20자, 영문/숫자/한글/_-만 허용)"
+                            maxLength={maxRoomNameLength}
+                            aria-invalid={Boolean(roomNameError)}
                         />
+                        {roomNameError && <p className="inputError">{roomNameError}</p>}
                         <button onClick={create_room}>방 만들기</button>
                     </div>
                 </div>
