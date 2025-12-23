@@ -19,17 +19,21 @@ const Room = () => {
 
     const { nspName, roomName } = useParams();
 
+    const createMessageId = (socketId) => `${Date.now()}-${socketId ?? 'unknown'}`;
+
     useEffect(() => {
         const ws = io(`${API_URL}/${nspName}/${roomName}`);
         setWS(ws);
 
         const addMessage = (message) => {
-            setMessages((prevMessages) => [...prevMessages, { 'type': 'text', 'content': message }]);
+            const id = createMessageId(ws.id);
+            setMessages((prevMessages) => [...prevMessages, { id, 'type': 'text', 'content': message }]);
         };
 
         const addImage = (message) => {
             console.log(message);
-            setMessages((prevMessages) => [...prevMessages, { 'type': 'image', 'content': message }]);
+            const id = createMessageId(ws.id);
+            setMessages((prevMessages) => [...prevMessages, { id, 'type': 'image', 'content': message }]);
         }
 
         ws.on('receive_message', addMessage);

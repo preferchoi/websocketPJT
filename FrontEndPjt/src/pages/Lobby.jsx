@@ -47,8 +47,11 @@ const Lobby = () => {
         };
     }, [serverName]);
 
+    const createMessageId = (socketId) => `${Date.now()}-${socketId ?? 'unknown'}`;
+
     const addMessage = (message) => {
-        setMessages((prevMessages) => [...prevMessages, { 'type': 'text', 'content': message }]);
+        const id = createMessageId(WS?.id);
+        setMessages((prevMessages) => [...prevMessages, { id, 'type': 'text', 'content': message }]);
     };
 
     const sendMessage = () => {
