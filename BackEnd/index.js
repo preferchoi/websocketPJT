@@ -129,7 +129,7 @@ function loadState() {
     }
 }
 
-function saveState() {
+function saveState(context = 'unknown') {
     const snapshot = {};
     Object.entries(serverEndPoint).forEach(([nspName, value]) => {
         snapshot[nspName] = {
@@ -145,89 +145,94 @@ function saveState() {
     try {
         fs.writeFileSync(STATE_PATH, JSON.stringify(snapshot, null, 2));
     } catch (error) {
-        console.error('Failed to save state:', error);
+        console.error(`Failed to save state (${context}):`, error);
     }
 }
 
 function createRoomNamespace(nspName, roomName, roomLimit, { persist } = { persist: true }) {
-    if (serverEndPoint[nspName]['rooms'][roomName]) {
+    try {
+        if (serverEndPoint[nspName]['rooms'][roomName]) {
+            return false;
+        }
+        const nsp = io.of(`/${nspName}/${roomName}`);
+        const info = {
+            'connection_now': 0,
+            'connection_limit': roomLimit,
+            'isAbleConnect': true,
+        };
+        serverEndPoint[nspName]['rooms'][roomName] = info
+        nsp.on('connection', (socket) => {
+            if (info['connection_now'] >= info['connection_limit']) {
+                socket.emit('server_full', '서버가 가득 찼습니다. 다른 서버를 이용해주세요.');
+                socket.disconnect(true);
+                return;
+            }
+            info['connection_now'] += 1
+            if (info['connection_now'] === info['connection_limit']) {
+                info['isAbleConnect'] = false
+            }
+            nsp.emit('receive_message', `${socket.id} 님이 서버에 접속했습니다.`);
+
+            socket.on('send_message', (data) => {
+                if (typeof data !== 'string') {
+                    emitSocketError(socket, 'message type is invalid');
+                    return;
+                }
+                if (data.length > MAX_MESSAGE_LENGTH) {
+                    emitSocketError(socket, 'message length exceeds limit');
+                    return;
+                }
+                nsp.emit('receive_message', `${socket.id}: ${data}`);
+            });
+
+            socket.on('send_image', async (data) => {
+                // 이미지 데이터 저장 후, 원본 파일 저장 경로 추가 전송 필요함
+                const normalized = normalizeImagePayload(data);
+                if (normalized.error) {
+                    emitSocketError(socket, normalized.error);
+                    return;
+                }
+                if (normalized.size > MAX_IMAGE_BYTES) {
+                    emitSocketError(socket, 'image size exceeds limit');
+                    return;
+                }
+                const inputBuffer = normalized.buffer;
+                const resizedImageBuffer = await sharp(inputBuffer)
+                    .resize({
+                        width: 200,
+                        fit: 'inside'
+                    })
+                    .toBuffer();
+                const mimeType = data && typeof data.mimeType === 'string' ? data.mimeType : 'image/jpeg';
+                nsp.emit('receive_image', { data: resizedImageBuffer, mimeType });
+            });
+
+            socket.on('disconnect', () => {
+                nsp.emit('receive_message', `${socket.id} 님이 서버에서 나갔습니다.`);
+                info['connection_now'] -= 1;
+                if (info['connection_now'] < info['connection_limit']) {
+                    info['isAbleConnect'] = true
+                }
+                if (info['connection_now'] <= 0) {
+                    delete serverEndPoint[nspName]['rooms'][roomName];
+                    nsp.removeAllListeners('connection');
+                    nsp.disconnectSockets(true)
+                    io.of(`/${nspName}`).emit('delete_room', '')
+                    if (persist) {
+                        saveState(`room cleanup ${nspName}/${roomName}`);
+                    }
+                }
+            });
+        });
+
+        if (persist) {
+            saveState(`room created ${nspName}/${roomName}`);
+        }
+        return true;
+    } catch (error) {
+        console.error(`Failed to create room namespace ${nspName}/${roomName}:`, error);
         return false;
     }
-    const nsp = io.of(`/${nspName}/${roomName}`);
-    const info = {
-        'connection_now': 0,
-        'connection_limit': roomLimit,
-        'isAbleConnect': true,
-    };
-    serverEndPoint[nspName]['rooms'][roomName] = info
-    nsp.on('connection', (socket) => {
-        if (info['connection_now'] >= info['connection_limit']) {
-            socket.emit('server_full', '서버가 가득 찼습니다. 다른 서버를 이용해주세요.');
-            socket.disconnect(true);
-            return;
-        }
-        info['connection_now'] += 1
-        if (info['connection_now'] === info['connection_limit']) {
-            info['isAbleConnect'] = false
-        }
-        nsp.emit('receive_message', `${socket.id} 님이 서버에 접속했습니다.`);
-
-        socket.on('send_message', (data) => {
-            if (typeof data !== 'string') {
-                emitSocketError(socket, 'message type is invalid');
-                return;
-            }
-            if (data.length > MAX_MESSAGE_LENGTH) {
-                emitSocketError(socket, 'message length exceeds limit');
-                return;
-            }
-            nsp.emit('receive_message', `${socket.id}: ${data}`);
-        });
-
-        socket.on('send_image', async (data) => {
-            // 이미지 데이터 저장 후, 원본 파일 저장 경로 추가 전송 필요함
-            const normalized = normalizeImagePayload(data);
-            if (normalized.error) {
-                emitSocketError(socket, normalized.error);
-                return;
-            }
-            if (normalized.size > MAX_IMAGE_BYTES) {
-                emitSocketError(socket, 'image size exceeds limit');
-                return;
-            }
-            const inputBuffer = normalized.buffer;
-            const resizedImageBuffer = await sharp(inputBuffer)
-                .resize({
-                    width: 200,
-                    fit: 'inside'
-                })
-                .toBuffer();
-            const mimeType = data && typeof data.mimeType === 'string' ? data.mimeType : 'image/jpeg';
-            nsp.emit('receive_image', { data: resizedImageBuffer, mimeType });
-        });
-
-        socket.on('disconnect', () => {
-            nsp.emit('receive_message', `${socket.id} 님이 서버에서 나갔습니다.`);
-            info['connection_now'] -= 1;
-            if (info['connection_now'] < info['connection_limit']) {
-                info['isAbleConnect'] = true
-            }
-            if (info['connection_now'] <= 0) {
-                delete serverEndPoint[nspName]['rooms'][roomName];
-                nsp.removeAllListeners('connection');
-                nsp.disconnectSockets(true)
-                io.of(`/${nspName}`).emit('delete_room', '')
-                if (persist) {
-                    saveState();
-                }
-            }
-        });
-    });
-
-    if (persist) {
-        saveState();
-    }
-    return true;
 }
 
 /*
@@ -400,6 +405,7 @@ app.post('/:nsp/create_room', (req, res) => {
 
     const created = createRoomNamespace(nspName, roomName, roomLimit);
     if (created) {
+        saveState(`create_room endpoint ${nspName}/${roomName}`);
         res.json('success');
         return;
     }
@@ -412,10 +418,17 @@ pm2를 이용했기 때문에, 종료 시 자동으로 재시작 됨.
 */
 process.on('uncaughtException', (err) => {
     console.error('An uncaught exception occurred:', err);
+    saveState('uncaughtException');
     Object.keys(serverEndPoint).forEach((key) => {
         serverEndPoint[key].connect = false;
     });
     process.exit(1);
+});
+
+process.on('SIGTERM', () => {
+    console.warn('SIGTERM received. Attempting to save state before shutdown.');
+    saveState('SIGTERM');
+    process.exit(0);
 });
 
 
