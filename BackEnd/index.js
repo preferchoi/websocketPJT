@@ -27,6 +27,11 @@ const STATE_PATH = path.join(__dirname, 'state.json');
 const DEFAULT_ROOM_LIMIT = 8;
 const MIN_ROOM_LIMIT = 1;
 const MAX_ROOM_LIMIT = 100;
+const SAVE_STATE_DEBOUNCE_MS = 250;
+
+let saveStateTimeout = null;
+let saveStateInFlight = false;
+let saveStatePendingContext = null;
 
 function emitSocketError(socket, message) {
     socket.emit('error', { message });
@@ -129,7 +134,7 @@ function loadState() {
     }
 }
 
-function saveState(context = 'unknown') {
+function buildStateSnapshot() {
     const snapshot = {};
     Object.entries(serverEndPoint).forEach(([nspName, value]) => {
         snapshot[nspName] = {
@@ -141,12 +146,38 @@ function saveState(context = 'unknown') {
             )
         };
     });
+    return snapshot;
+}
 
+async function saveState(context = 'unknown') {
+    const snapshot = buildStateSnapshot();
     try {
-        fs.writeFileSync(STATE_PATH, JSON.stringify(snapshot, null, 2));
+        await fs.promises.writeFile(STATE_PATH, JSON.stringify(snapshot, null, 2));
     } catch (error) {
         console.error(`Failed to save state (${context}):`, error);
     }
+}
+
+function scheduleSaveState(context = 'unknown') {
+    saveStatePendingContext = context;
+    if (saveStateTimeout) {
+        clearTimeout(saveStateTimeout);
+    }
+    saveStateTimeout = setTimeout(async () => {
+        saveStateTimeout = null;
+        if (saveStateInFlight) {
+            scheduleSaveState(saveStatePendingContext || context);
+            return;
+        }
+        const contextToSave = saveStatePendingContext || context;
+        saveStatePendingContext = null;
+        saveStateInFlight = true;
+        try {
+            await saveState(contextToSave);
+        } finally {
+            saveStateInFlight = false;
+        }
+    }, SAVE_STATE_DEBOUNCE_MS);
 }
 
 function createRoomNamespace(nspName, roomName, roomLimit, { persist } = { persist: true }) {
@@ -219,14 +250,14 @@ function createRoomNamespace(nspName, roomName, roomLimit, { persist } = { persi
                     nsp.disconnectSockets(true)
                     io.of(`/${nspName}`).emit('delete_room', '')
                     if (persist) {
-                        saveState(`room cleanup ${nspName}/${roomName}`);
+                        scheduleSaveState(`room cleanup ${nspName}/${roomName}`);
                     }
                 }
             });
         });
 
         if (persist) {
-            saveState(`room created ${nspName}/${roomName}`);
+            scheduleSaveState(`room created ${nspName}/${roomName}`);
         }
         return true;
     } catch (error) {
@@ -405,7 +436,7 @@ app.post('/:nsp/create_room', (req, res) => {
 
     const created = createRoomNamespace(nspName, roomName, roomLimit);
     if (created) {
-        saveState(`create_room endpoint ${nspName}/${roomName}`);
+        scheduleSaveState(`create_room endpoint ${nspName}/${roomName}`);
         res.json('success');
         return;
     }
@@ -418,17 +449,19 @@ pm2를 이용했기 때문에, 종료 시 자동으로 재시작 됨.
 */
 process.on('uncaughtException', (err) => {
     console.error('An uncaught exception occurred:', err);
-    saveState('uncaughtException');
     Object.keys(serverEndPoint).forEach((key) => {
         serverEndPoint[key].connect = false;
     });
-    process.exit(1);
+    void saveState('uncaughtException').finally(() => {
+        process.exit(1);
+    });
 });
 
 process.on('SIGTERM', () => {
     console.warn('SIGTERM received. Attempting to save state before shutdown.');
-    saveState('SIGTERM');
-    process.exit(0);
+    void saveState('SIGTERM').finally(() => {
+        process.exit(0);
+    });
 });
 
 
