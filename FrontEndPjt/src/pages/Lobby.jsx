@@ -133,7 +133,19 @@ const Lobby = () => {
             alert(failMessage);
         } catch (error) {
             console.error(error);
-            alert('방 생성에 실패했습니다.');
+            const status = error?.response?.status;
+            const serverErrorMessage = error?.response?.data?.error;
+            let errorMessage = serverErrorMessage || '방 생성에 실패했습니다.';
+
+            if (status === 409) {
+                errorMessage = serverErrorMessage || '이미 존재하는 방 이름입니다.';
+            } else if (status === 400) {
+                errorMessage = serverErrorMessage || '잘못된 요청입니다. 입력값을 확인해주세요.';
+            } else if (!status) {
+                errorMessage = '서버에 연결할 수 없습니다. 잠시 후 다시 시도해주세요.';
+            }
+
+            alert(errorMessage);
         }
     }
 
