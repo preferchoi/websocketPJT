@@ -13,6 +13,9 @@
 ## BackEnd
 사용 기술: express.js, webSocket
 
+### 환경 변수
+- `STATE_PATH`: 서버 상태 저장 파일 경로를 지정합니다. 지정하지 않으면 `BackEnd/state.json`을 사용합니다.
+
 ## 특기점
 
 ### throttle을 이용한 서버 갱신
