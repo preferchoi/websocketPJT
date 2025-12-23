@@ -55,8 +55,12 @@ const Room = () => {
     }
 
     const sendMessage = () => {
+        const trimmedMessage = newMessage.trim();
+        if (!trimmedMessage) {
+            return;
+        }
         if (WS) {
-            WS.emit('send_message', newMessage);
+            WS.emit('send_message', trimmedMessage);
             setNewMessage("");
         }
     };
@@ -64,8 +68,9 @@ const Room = () => {
     const sendImage = () => {
         if (!newImage) {
             alert('이미지를 입력해주세요.')
+            return;
         }
-        if (WS && newImage) {
+        if (WS) {
             WS.emit('send_image', {
                 data: newImage.data,
                 mimeType: newImage.mimeType || 'image/png',

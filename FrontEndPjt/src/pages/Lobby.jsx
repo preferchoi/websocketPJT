@@ -52,8 +52,12 @@ const Lobby = () => {
     };
 
     const sendMessage = () => {
+        const trimmedMessage = newMessage.trim();
+        if (!trimmedMessage) {
+            return;
+        }
         if (WS) {
-            WS.emit('send_message', newMessage);
+            WS.emit('send_message', trimmedMessage);
             setNewMessage("");
         }
     };
