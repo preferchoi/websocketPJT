@@ -6,7 +6,8 @@ const ChatLog = ({ messages }) => {
     useEffect(() => {
         const urls = messages.map((message) => {
             if (message.type === 'image') {
-                const blob = new Blob([message.content], { type: 'image/jpeg' });
+                const { data, mimeType } = message.content || {};
+                const blob = new Blob([data], { type: mimeType || 'image/jpeg' });
                 return URL.createObjectURL(blob);
             }
             return null;

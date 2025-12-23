@@ -47,7 +47,9 @@ const Room = () => {
             const reader = new FileReader();
             reader.readAsArrayBuffer(file);
             reader.onload = () => {
-                setNewImage(reader.result);
+                if (reader.result instanceof ArrayBuffer) {
+                    setNewImage({ data: reader.result, mimeType: file.type || 'image/png' });
+                }
             };
         }
     }
@@ -64,8 +66,10 @@ const Room = () => {
             alert('이미지를 입력해주세요.')
         }
         if (WS && newImage) {
-            const blob = new Blob([newImage], { type: 'image/png' })
-            WS.emit('send_image', blob);
+            WS.emit('send_image', {
+                data: newImage.data,
+                mimeType: newImage.mimeType || 'image/png',
+            });
             setNewImage(null);
         }
     };

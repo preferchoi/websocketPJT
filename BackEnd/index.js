@@ -234,13 +234,19 @@ app.post('/:nsp/create_room', (req, res) => {
 
             socket.on('send_image', async (data) => {
                 // 이미지 데이터 저장 후, 원본 파일 저장 경로 추가 전송 필요함
-                const resizedImageBuffer = await sharp(data)
+                const payload = data && data.data ? data.data : data;
+                if (!payload) {
+                    return;
+                }
+                const inputBuffer = Buffer.isBuffer(payload) ? payload : Buffer.from(payload);
+                const resizedImageBuffer = await sharp(inputBuffer)
                     .resize({
                         width: 200,
                         fit: 'inside'
                     })
                     .toBuffer();
-                nsp.emit('receive_image', resizedImageBuffer);
+                const mimeType = data && data.mimeType ? data.mimeType : 'image/jpeg';
+                nsp.emit('receive_image', { data: resizedImageBuffer, mimeType });
             });
 
             socket.on('disconnect', () => {
