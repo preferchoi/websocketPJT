@@ -85,3 +85,21 @@ body {
     flex: 1;
     margin-right: 10px;
 }
+
+.createRoom {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    max-width: 320px;
+}
+
+.createRoom input[aria-invalid="true"] {
+    border: 1px solid #e11d48;
+    outline: none;
+}
+
+.inputError {
+    color: #e11d48;
+    font-size: 0.85rem;
+    margin: 0;
+}
