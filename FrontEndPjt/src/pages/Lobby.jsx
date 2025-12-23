@@ -71,12 +71,9 @@ const Lobby = () => {
 
     const create_room = () => {
         if (roomName) {
-            axios.get(`${API_URL}/${serverName}/create_room`, {
-                'params': {
-                    roomName
-                }
-            }
-            ).then(res => {
+            axios.post(`${API_URL}/${serverName}/create_room`, {
+                roomName
+            }).then(res => {
                 console.log(res);
                 WS.emit('create_room', '');
                 navigate(`/${serverName}/${roomName}`);
