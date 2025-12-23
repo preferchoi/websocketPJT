@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
+import PropTypes from 'prop-types';
 
 const ChatLog = ({ messages }) => {
     const [imageUrls, setImageUrls] = useState({});
@@ -25,7 +26,7 @@ const ChatLog = ({ messages }) => {
             <h3>채팅 로그</h3>
             <div className='chatLog'>
                 {messages.map((message) => {
-                    if (message.type == 'text') {
+                    if (message.type === 'text') {
                         return <div key={message.id}>{message.content}</div>
                     } else if (message.type === 'image') {
                         const url = imageUrls[message.id];
@@ -37,6 +38,22 @@ const ChatLog = ({ messages }) => {
             </div>
         </>
     );
+};
+
+ChatLog.propTypes = {
+    messages: PropTypes.arrayOf(
+        PropTypes.shape({
+            id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
+            type: PropTypes.string.isRequired,
+            content: PropTypes.oneOfType([
+                PropTypes.string,
+                PropTypes.shape({
+                    data: PropTypes.any,
+                    mimeType: PropTypes.string,
+                }),
+            ]),
+        })
+    ).isRequired,
 };
 
 export default ChatLog;
