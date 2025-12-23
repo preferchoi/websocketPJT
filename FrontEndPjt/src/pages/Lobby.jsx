@@ -21,13 +21,17 @@ const Lobby = () => {
     const { serverName } = useParams();
 
     useEffect(() => {
+        if (!serverName) {
+            return undefined;
+        }
+
         const ws = io(`${API_URL}/${serverName}`);
         setWS(ws);
         ws.on('receive_message', addMessage);
-        ws.on('connect_user', getUserData)
-        ws.on('disconnect_user', getUserData)
-        ws.on('create_room', getRoomData)
-        ws.on('delete_room', getRoomData)
+        ws.on('connect_user', getUserData);
+        ws.on('disconnect_user', getUserData);
+        ws.on('create_room', getRoomData);
+        ws.on('delete_room', getRoomData);
 
         getUserData();
         getRoomData();
@@ -37,11 +41,11 @@ const Lobby = () => {
             ws.off('connect_user', getUserData);
             ws.off('disconnect_user', getUserData);
             ws.off('create_room', getRoomData);
-            ws.off('delete_room', getRoomData)
+            ws.off('delete_room', getRoomData);
             ws.disconnect();
-            setWS(null)
+            setWS(null);
         };
-    }, []);
+    }, [serverName]);
 
     const addMessage = (message) => {
         setMessages((prevMessages) => [...prevMessages, { 'type': 'text', 'content': message }]);
