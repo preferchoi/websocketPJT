@@ -138,6 +138,11 @@ app.get('/mainserver', (req, res) => {
 app.get('/:nsp/users', (req, res) => {
     const nspName = req.params.nsp;
 
+    if (!serverEndPoint[nspName]) {
+        res.status(404).json({ error: 'Namespace not found' });
+        return;
+    }
+
     if (serverEndPoint[nspName].connect) {
         const userList = Object.keys(serverEndPoint[nspName]['users']);
         res.json({ userList });
@@ -151,6 +156,11 @@ app.get('/:nsp/users', (req, res) => {
 */
 app.get('/:nsp/rooms', (req, res) => {
     const nspName = req.params.nsp;
+
+    if (!serverEndPoint[nspName]) {
+        res.status(404).json({ error: 'Namespace not found' });
+        return;
+    }
 
     if (serverEndPoint[nspName].connect) {
         const roomList = Object.keys(serverEndPoint[nspName]['rooms']);
@@ -175,6 +185,11 @@ app.get('/:nsp/create_room', (req, res) => {
     const nspName = req.params.nsp;
     const roomName = req.query.roomName
     const roomLimit = parseInt(req.query.roomLimit, 10) || 8
+
+    if (!serverEndPoint[nspName]) {
+        res.status(400).json({ error: 'Namespace not found' });
+        return;
+    }
 
     if (!serverEndPoint[nspName]['rooms'][roomName]) {
         const nsp = io.of(`/${nspName}/${roomName}`);
