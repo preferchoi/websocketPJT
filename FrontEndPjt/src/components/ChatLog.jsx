@@ -1,6 +1,28 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 
 const ChatLog = ({ messages }) => {
+    const [imageUrls, setImageUrls] = useState([]);
+
+    useEffect(() => {
+        const urls = messages.map((message) => {
+            if (message.type === 'image') {
+                const blob = new Blob([message.content], { type: 'image/jpeg' });
+                return URL.createObjectURL(blob);
+            }
+            return null;
+        });
+
+        setImageUrls(urls);
+
+        return () => {
+            urls.forEach((url) => {
+                if (url) {
+                    URL.revokeObjectURL(url);
+                }
+            });
+        };
+    }, [messages]);
+
     return (
         <>
             <h3>채팅 로그</h3>
@@ -9,9 +31,8 @@ const ChatLog = ({ messages }) => {
                     if (message.type == 'text') {
                         return <div key={index}>{message.content}</div>
                     } else if (message.type === 'image') {
-                        const blob = new Blob([message.content], { type: 'image/jpeg' })
-                        const url = URL.createObjectURL(blob);
-                        return <div key={index}><img src={url} alt="img" /></div>
+                        const url = imageUrls[index];
+                        return url ? <div key={index}><img src={url} alt="img" /></div> : null;
                     } else {
                         return null
                     }
