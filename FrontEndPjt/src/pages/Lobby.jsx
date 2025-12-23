@@ -14,6 +14,7 @@ const Lobby = () => {
     const [userList, setUserList] = useState([])
     const [messages, setMessages] = useState([]);
     const [roomList, setRoomList] = useState([]);
+    const [roomLoading, setRoomLoading] = useState(false);
     const [newMessage, setNewMessage] = useState("");
     const [roomName, setRoomName] = useState('');
 
@@ -74,9 +75,14 @@ const Lobby = () => {
     };
 
     const getRoomData = async () => {
-        const roomList = await getRoom(serverName)
-        if (roomList != null) {
-            setRoomList(roomList);
+        setRoomLoading(true);
+        try {
+            const roomList = await getRoom(serverName);
+            if (roomList != null) {
+                setRoomList(roomList);
+            }
+        } finally {
+            setRoomLoading(false);
         }
     };
 
@@ -118,9 +124,15 @@ const Lobby = () => {
                 <div className="room">
                     <h3>방 목록</h3>
                     <div className='roomList'>
-                        {roomList?.map((el, index) => (
-                            <div className='roomCell' key={index} onClick={() => { navigate(`/${serverName}/${el}`) }} >{el}</div>
-                        ))}
+                        {roomLoading ? (
+                            <p>방 목록을 불러오는 중입니다...</p>
+                        ) : roomList?.length === 0 ? (
+                            <p>방이 없습니다.</p>
+                        ) : (
+                            roomList?.map((el, index) => (
+                                <div className='roomCell' key={index} onClick={() => { navigate(`/${serverName}/${el}`) }} >{el}</div>
+                            ))
+                        )}
                     </div>
                     <div className='createRoom'>
                         <input
