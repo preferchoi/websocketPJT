@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import axios from "axios";
 import { useNavigate } from 'react-router-dom';
 import './App.css';
@@ -17,11 +17,7 @@ function App() {
     navigate(`/${serverName}`);
   };
 
-  useEffect(() => {
-    getData();
-  }, [])
-
-  const getData = async () => {
+  const getData = useCallback(async () => {
     try {
       const res = await axios.get(`${API_URL}/mainserver`);
       setServerList(res.data);
@@ -29,7 +25,11 @@ function App() {
     } catch (error) {
       console.error(error);
     }
-  };
+  }, [API_URL]);
+
+  useEffect(() => {
+    getData();
+  }, [getData])
 
   const handleGetData = () => {
     setIsGetData(true)
