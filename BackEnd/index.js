@@ -1,6 +1,8 @@
 const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
+const fs = require('fs/promises');
+const path = require('path');
 
 const app = express();
 const server = http.createServer(app);
@@ -20,47 +22,117 @@ app.use(express.urlencoded({ extended: true }));
 
 const sharp = require('sharp');
 
+const snapshotPath = process.env.SNAPSHOT_PATH || path.join(__dirname, 'server_snapshot.json');
+
 // 서버 엔드포인트 목록
 const serverEndPoint = {
     'mainserver001': {
         'connect': false,
         'users': {},
+        'usersCount': 0,
         'rooms': {},
     },
     'mainserver002': {
         'connect': false,
         'users': {},
+        'usersCount': 0,
         'rooms': {},
     },
     'mainserver003': {
         'connect': false,
         'users': {},
+        'usersCount': 0,
         'rooms': {},
     },
     'mainserver004': {
         'connect': false,
         'users': {},
+        'usersCount': 0,
         'rooms': {},
     },
     'mainserver005': {
         'connect': false,
         'users': {},
+        'usersCount': 0,
         'rooms': {},
     },
     'mainserver006': {
         'connect': false,
         'users': {},
+        'usersCount': 0,
         'rooms': {},
     },
     'mainserver007': {
         'connect': false,
         'users': {},
+        'usersCount': 0,
         'rooms': {},
     },
     'mainserver008': {
         'connect': false,
         'users': {},
+        'usersCount': 0,
         'rooms': {},
+    }
+}
+
+function buildSnapshot() {
+    return {
+        updatedAt: new Date().toISOString(),
+        namespaces: Object.entries(serverEndPoint).reduce((acc, [name, data]) => {
+            acc[name] = {
+                connect: data.connect,
+                usersCount: data.usersCount,
+                rooms: Object.entries(data.rooms).reduce((rooms, [roomName, info]) => {
+                    rooms[roomName] = {
+                        connection_now: info.connection_now,
+                        connection_limit: info.connection_limit,
+                        isAbleConnect: info.isAbleConnect,
+                    };
+                    return rooms;
+                }, {})
+            };
+            return acc;
+        }, {})
+    };
+}
+
+async function saveSnapshot() {
+    try {
+        await fs.writeFile(snapshotPath, JSON.stringify(buildSnapshot(), null, 2), 'utf8');
+    } catch (error) {
+        console.error('Failed to save snapshot:', error);
+    }
+}
+
+async function loadSnapshot() {
+    try {
+        const raw = await fs.readFile(snapshotPath, 'utf8');
+        const parsed = JSON.parse(raw);
+        if (!parsed || !parsed.namespaces) {
+            return;
+        }
+        Object.entries(parsed.namespaces).forEach(([name, data]) => {
+            if (!serverEndPoint[name]) {
+                return;
+            }
+            serverEndPoint[name].connect = Boolean(data.connect);
+            serverEndPoint[name].usersCount = Number.isFinite(data.usersCount) ? data.usersCount : 0;
+            if (data.rooms && typeof data.rooms === 'object') {
+                serverEndPoint[name].rooms = Object.entries(data.rooms).reduce((acc, [roomName, info]) => {
+                    acc[roomName] = {
+                        connection_now: Number.isFinite(info.connection_now) ? info.connection_now : 0,
+                        connection_limit: Number.isFinite(info.connection_limit) ? info.connection_limit : 8,
+                        isAbleConnect: Boolean(info.isAbleConnect),
+                    };
+                    return acc;
+                }, {});
+            }
+        });
+    } catch (error) {
+        if (error.code !== 'ENOENT') {
+            console.error('Failed to load snapshot:', error);
+        }
     }
 }
 
@@ -72,47 +144,117 @@ function initializeNamespace(key, nsp) {
     serverEndPoint[key].connect = true
 }
 
+function registerRoomNamespace(nspName, roomName, info) {
+    const nsp = io.of(`/${nspName}/${roomName}`);
+    nsp.on('connection', (socket) => {
+        if (info['connection_now'] >= info['connection_limit']) {
+            socket.emit('server_full', '서버가 가득 찼습니다. 다른 서버를 이용해주세요.');
+            socket.disconnect(true);
+            return;
+        }
+        info['connection_now'] += 1
+        if (info['connection_now'] === info['connection_limit']) {
+            info['isAbleConnect'] = false
+        }
+        saveSnapshot();
+        nsp.emit('receive_message', `${socket.id} 님이 서버에 접속했습니다.`);
+
+        socket.on('send_message', (data) => {
+            nsp.emit('receive_message', `${socket.id}: ${data}`);
+        });
+
+        socket.on('send_image', async (data) => {
+            // 이미지 데이터 저장 후, 원본 파일 저장 경로 추가 전송 필요함
+            const payload = data && data.data ? data.data : data;
+            if (!payload) {
+                return;
+            }
+            const inputBuffer = Buffer.isBuffer(payload) ? payload : Buffer.from(payload);
+            const resizedImageBuffer = await sharp(inputBuffer)
+                .resize({
+                    width: 200,
+                    fit: 'inside'
+                })
+                .toBuffer();
+            const mimeType = data && data.mimeType ? data.mimeType : 'image/jpeg';
+            nsp.emit('receive_image', { data: resizedImageBuffer, mimeType });
+        });
+
+        socket.on('disconnect', () => {
+            nsp.emit('receive_message', `${socket.id} 님이 서버에서 나갔습니다.`);
+            info['connection_now'] -= 1;
+            if (info['connection_now'] < info['connection_limit']) {
+                info['isAbleConnect'] = true
+            }
+            if (info['connection_now'] <= 0) {
+                delete serverEndPoint[nspName]['rooms'][roomName];
+                nsp.removeAllListeners('connection');
+                nsp.disconnectSockets(true)
+                io.of(`/${nspName}`).emit('delete_room', '')
+            }
+            saveSnapshot();
+        });
+    });
+}
+
+function restoreRoomNamespaces() {
+    Object.entries(serverEndPoint).forEach(([nspName, data]) => {
+        Object.entries(data.rooms).forEach(([roomName, info]) => {
+            registerRoomNamespace(nspName, roomName, info);
+        });
+    });
+}
+
 /*
 Socket.io 네임스페이스 세팅
 */
-Object.keys(serverEndPoint).forEach((nspName) => {
-    const nsp = io.of(`/${nspName}`);
-    initializeNamespace(nspName, nsp);
+function setupNamespaces() {
+    Object.keys(serverEndPoint).forEach((nspName) => {
+        const nsp = io.of(`/${nspName}`);
+        initializeNamespace(nspName, nsp);
+        serverEndPoint[nspName].connect = serverEndPoint[nspName].usersCount < 100;
 
-    nsp.on('connection', (socket) => {
-        if (Object.keys(serverEndPoint[nspName]['users']).length < 100) {
-            console.log(`User connected to ${nspName}`);
-            serverEndPoint[nspName]['users'][socket.id] = socket.handshake;
-            nsp.emit('receive_message', `${socket.id} 님이 서버에 접속했습니다.`);
-            nsp.emit('connect_user', '');
+        nsp.on('connection', (socket) => {
+            if (serverEndPoint[nspName].usersCount < 100) {
+                console.log(`User connected to ${nspName}`);
+                serverEndPoint[nspName]['users'][socket.id] = socket.handshake;
+                serverEndPoint[nspName].usersCount += 1;
+                nsp.emit('receive_message', `${socket.id} 님이 서버에 접속했습니다.`);
+                nsp.emit('connect_user', '');
 
-            if (Object.keys(serverEndPoint[nspName]['users']).length >= 100) {
-                serverEndPoint[nspName]['connect'] = false
-            }
-
-            socket.on('send_message', (data) => {
-                nsp.emit('receive_message', `${socket.id}: ${data}`);
-                console.log(data);
-            });
-
-            socket.on('create_room', () => {
-                nsp.emit('create_room', '')
-            })
-
-            socket.on('disconnect', () => {
-                delete serverEndPoint[nspName]['users'][socket.id];
-                nsp.emit('receive_message', `${socket.id} 님이 서버에서 나갔습니다.`);
-                nsp.emit('disconnect_user', '');
-                if (Object.keys(serverEndPoint[nspName]['users']).length < 100) {
-                    serverEndPoint[nspName]['connect'] = true
+                if (serverEndPoint[nspName].usersCount >= 100) {
+                    serverEndPoint[nspName]['connect'] = false
                 }
-            });
-        } else {
-            socket.emit('server_full', '서버가 가득 찼습니다. 다른 서버를 이용해주세요.');
-            socket.disconnect();
-        }
+                saveSnapshot();
+
+                socket.on('send_message', (data) => {
+                    nsp.emit('receive_message', `${socket.id}: ${data}`);
+                    console.log(data);
+                });
+
+                socket.on('create_room', () => {
+                    nsp.emit('create_room', '')
+                })
+
+                socket.on('disconnect', () => {
+                    if (serverEndPoint[nspName]['users'][socket.id]) {
+                        delete serverEndPoint[nspName]['users'][socket.id];
+                        serverEndPoint[nspName].usersCount = Math.max(0, serverEndPoint[nspName].usersCount - 1);
+                    }
+                    nsp.emit('receive_message', `${socket.id} 님이 서버에서 나갔습니다.`);
+                    nsp.emit('disconnect_user', '');
+                    if (serverEndPoint[nspName].usersCount < 100) {
+                        serverEndPoint[nspName]['connect'] = true
+                    }
+                    saveSnapshot();
+                });
+            } else {
+                socket.emit('server_full', '서버가 가득 찼습니다. 다른 서버를 이용해주세요.');
+                socket.disconnect();
+            }
+        });
     });
-});
+}
 
 /*
 웹소켓 1차 네임스페이스 목록 불러오는 함수
@@ -125,10 +267,13 @@ Object.keys(serverEndPoint).forEach((nspName) => {
 */
 app.get('/mainserver', (req, res) => {
     const mainServerNames = Object.entries(serverEndPoint).map(([key, value]) => {
+        const usersLength = Number.isFinite(value.usersCount)
+            ? value.usersCount
+            : Object.keys(value.users).length;
         return {
             name: key,
             connect: value.connect,
-            usersLength: Object.keys(value.users).length
+            usersLength
         };
     })
     res.json(mainServerNames);
@@ -212,60 +357,14 @@ app.post('/:nsp/create_room', (req, res) => {
     }
 
     if (!serverEndPoint[nspName]['rooms'][roomName]) {
-        const nsp = io.of(`/${nspName}/${roomName}`);
         const info = {
             'connection_now': 0,
             'connection_limit': roomLimit,
             'isAbleConnect': true,
         };
         serverEndPoint[nspName]['rooms'][roomName] = info
-        nsp.on('connection', (socket) => {
-            if (info['connection_now'] >= info['connection_limit']) {
-                socket.emit('server_full', '서버가 가득 찼습니다. 다른 서버를 이용해주세요.');
-                socket.disconnect(true);
-                return;
-            }
-            info['connection_now'] += 1
-            if (info['connection_now'] === info['connection_limit']) {
-                info['isAbleConnect'] = false
-            }
-            nsp.emit('receive_message', `${socket.id} 님이 서버에 접속했습니다.`);
-
-            socket.on('send_message', (data) => {
-                nsp.emit('receive_message', `${socket.id}: ${data}`);
-            });
-
-            socket.on('send_image', async (data) => {
-                // 이미지 데이터 저장 후, 원본 파일 저장 경로 추가 전송 필요함
-                const payload = data && data.data ? data.data : data;
-                if (!payload) {
-                    return;
-                }
-                const inputBuffer = Buffer.isBuffer(payload) ? payload : Buffer.from(payload);
-                const resizedImageBuffer = await sharp(inputBuffer)
-                    .resize({
-                        width: 200,
-                        fit: 'inside'
-                    })
-                    .toBuffer();
-                const mimeType = data && data.mimeType ? data.mimeType : 'image/jpeg';
-                nsp.emit('receive_image', { data: resizedImageBuffer, mimeType });
-            });
-
-            socket.on('disconnect', () => {
-                nsp.emit('receive_message', `${socket.id} 님이 서버에서 나갔습니다.`);
-                info['connection_now'] -= 1;
-                if (info['connection_now'] < info['connection_limit']) {
-                    info['isAbleConnect'] = true
-                }
-                if (info['connection_now'] <= 0) {
-                    delete serverEndPoint[nspName]['rooms'][roomName];
-                    nsp.removeAllListeners('connection');
-                    nsp.disconnectSockets(true)
-                    io.of(`/${nspName}`).emit('delete_room', '')
-                }
-            });
-        });
+        registerRoomNamespace(nspName, roomName, info);
+        saveSnapshot();
         res.json('success');
     } else {
         res.status(409).json({ error: 'roomName already exists' });
@@ -281,10 +380,18 @@ process.on('uncaughtException', (err) => {
     Object.keys(serverEndPoint).forEach((key) => {
         serverEndPoint[key].connect = false;
     });
+    saveSnapshot();
     process.exit(1);
 });
 
 
-server.listen(port, () => {
-    console.log(`Server running on http://localhost:${port}/`);
-});
+async function bootstrap() {
+    await loadSnapshot();
+    setupNamespaces();
+    restoreRoomNamespaces();
+    server.listen(port, () => {
+        console.log(`Server running on http://localhost:${port}/`);
+    });
+}
+
+bootstrap();
