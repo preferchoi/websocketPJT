@@ -23,7 +23,7 @@ app.use(express.urlencoded({ extended: true }));
 const sharp = require('sharp');
 const MAX_MESSAGE_LENGTH = 500;
 const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
-const STATE_PATH = path.join(__dirname, 'state.json');
+const STATE_PATH = process.env.STATE_PATH || path.join(__dirname, 'state.json');
 const DEFAULT_ROOM_LIMIT = 8;
 const MIN_ROOM_LIMIT = 1;
 const MAX_ROOM_LIMIT = 100;
