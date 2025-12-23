@@ -73,17 +73,27 @@ const Lobby = () => {
         }
     };
 
-    const create_room = () => {
-        if (roomName) {
-            axios.post(`${API_URL}/${serverName}/create_room`, {
+    const create_room = async () => {
+        if (!roomName) {
+            alert('roomName을 입력해주세요.')
+            return;
+        }
+
+        try {
+            const res = await axios.post(`${API_URL}/${serverName}/create_room`, {
                 roomName
-            }).then(res => {
-                console.log(res);
+            });
+            const isSuccess = res?.data?.success;
+            if (isSuccess) {
                 WS.emit('create_room', '');
                 navigate(`/${serverName}/${roomName}`);
-            })
-        } else {
-            alert('roomName을 입력해주세요.')
+                return;
+            }
+            const failMessage = res?.data?.message || '방 생성에 실패했습니다.';
+            alert(failMessage);
+        } catch (error) {
+            console.error(error);
+            alert('방 생성에 실패했습니다.');
         }
     }
 
