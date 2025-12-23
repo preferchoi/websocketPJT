@@ -24,6 +24,9 @@ const sharp = require('sharp');
 const MAX_MESSAGE_LENGTH = 500;
 const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
 const STATE_PATH = path.join(__dirname, 'state.json');
+const DEFAULT_ROOM_LIMIT = 8;
+const MIN_ROOM_LIMIT = 1;
+const MAX_ROOM_LIMIT = 100;
 
 function emitSocketError(socket, message) {
     socket.emit('error', { message });
@@ -56,6 +59,17 @@ function normalizeImagePayload(data) {
     }
 
     return { error: 'image payload type is invalid' };
+}
+
+function normalizeRoomLimit(value, contextLabel) {
+    const parsed = Number(value);
+    const isValid = Number.isInteger(parsed) && parsed >= MIN_ROOM_LIMIT && parsed <= MAX_ROOM_LIMIT;
+    if (!isValid) {
+        const label = contextLabel ? ` (${contextLabel})` : '';
+        console.warn(`Invalid roomLimit${label}: ${value}. Using default ${DEFAULT_ROOM_LIMIT}.`);
+        return DEFAULT_ROOM_LIMIT;
+    }
+    return parsed;
 }
 
 // 서버 엔드포인트 목록
@@ -281,7 +295,7 @@ if (savedState) {
             return;
         }
         Object.entries(value.rooms || {}).forEach(([roomName, info]) => {
-            const roomLimit = Number(info.connection_limit) || 8;
+            const roomLimit = normalizeRoomLimit(info.connection_limit, `${nspName}/${roomName}`);
             createRoomNamespace(nspName, roomName, roomLimit, { persist: false });
         });
     });
