@@ -15,6 +15,8 @@ const port = 8000
 const cors = require('cors');
 
 app.use(cors());
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
 const sharp = require('sharp');
 
@@ -181,13 +183,31 @@ app.get('/:nsp/rooms', (req, res) => {
         }
     } 
 */
-app.get('/:nsp/create_room', (req, res) => {
+app.post('/:nsp/create_room', (req, res) => {
     const nspName = req.params.nsp;
-    const roomName = req.query.roomName
-    const roomLimit = parseInt(req.query.roomLimit, 10) || 8
+    const roomName = typeof req.body.roomName === 'string' ? req.body.roomName.trim() : ''
+    const roomLimit = parseInt(req.body.roomLimit, 10) || 8
+    const roomNamePattern = /^[A-Za-z0-9가-힣_-]+$/;
+    const minRoomNameLength = 1;
+    const maxRoomNameLength = 20;
 
     if (!serverEndPoint[nspName]) {
         res.status(400).json({ error: 'Namespace not found' });
+        return;
+    }
+
+    if (!roomName) {
+        res.status(400).json({ error: 'roomName is required' });
+        return;
+    }
+
+    if (roomName.length < minRoomNameLength || roomName.length > maxRoomNameLength) {
+        res.status(400).json({ error: 'roomName length is invalid' });
+        return;
+    }
+
+    if (!roomNamePattern.test(roomName)) {
+        res.status(400).json({ error: 'roomName contains invalid characters' });
         return;
     }
 
@@ -239,7 +259,7 @@ app.get('/:nsp/create_room', (req, res) => {
         });
         res.json('success');
     } else {
-        res.json('fail');
+        res.status(409).json({ error: 'roomName already exists' });
     }
 });
 
