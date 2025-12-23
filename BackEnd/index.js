@@ -116,7 +116,6 @@ async function loadSnapshot() {
             if (!serverEndPoint[name]) {
                 return;
             }
-            serverEndPoint[name].connect = Boolean(data.connect);
             serverEndPoint[name].usersCount = Number.isFinite(data.usersCount) ? data.usersCount : 0;
             if (data.rooms && typeof data.rooms === 'object') {
                 serverEndPoint[name].rooms = Object.entries(data.rooms).reduce((acc, [roomName, info]) => {
@@ -212,13 +211,14 @@ function setupNamespaces() {
     Object.keys(serverEndPoint).forEach((nspName) => {
         const nsp = io.of(`/${nspName}`);
         initializeNamespace(nspName, nsp);
-        serverEndPoint[nspName].connect = serverEndPoint[nspName].usersCount < 100;
+        serverEndPoint[nspName].connect = Object.keys(serverEndPoint[nspName].users).length < 100;
 
         nsp.on('connection', (socket) => {
-            if (serverEndPoint[nspName].usersCount < 100) {
+            const currentUsers = Object.keys(serverEndPoint[nspName].users).length;
+            if (currentUsers < 100) {
                 console.log(`User connected to ${nspName}`);
                 serverEndPoint[nspName]['users'][socket.id] = socket.handshake;
-                serverEndPoint[nspName].usersCount += 1;
+                serverEndPoint[nspName].usersCount = Object.keys(serverEndPoint[nspName].users).length;
                 nsp.emit('receive_message', `${socket.id} 님이 서버에 접속했습니다.`);
                 nsp.emit('connect_user', '');
 
@@ -237,10 +237,8 @@ function setupNamespaces() {
                 })
 
                 socket.on('disconnect', () => {
-                    if (serverEndPoint[nspName]['users'][socket.id]) {
-                        delete serverEndPoint[nspName]['users'][socket.id];
-                        serverEndPoint[nspName].usersCount = Math.max(0, serverEndPoint[nspName].usersCount - 1);
-                    }
+                    delete serverEndPoint[nspName]['users'][socket.id];
+                    serverEndPoint[nspName].usersCount = Object.keys(serverEndPoint[nspName].users).length;
                     nsp.emit('receive_message', `${socket.id} 님이 서버에서 나갔습니다.`);
                     nsp.emit('disconnect_user', '');
                     if (serverEndPoint[nspName].usersCount < 100) {
