@@ -1,16 +1,12 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom';
-import io from 'socket.io-client';
 
 import ChatLog from '../components/ChatLog';
+import useChatRoom from '../hooks/useChatRoom';
 
 import './room.css'
 
 const Room = () => {
-    const API_URL = import.meta.env.VITE_API_URL;
-
-    const [WS, setWS] = useState(null);
-    const [messages, setMessages] = useState([]);
     const [newMessage, setNewMessage] = useState("");
 
     const [newImage, setNewImage] = useState(null); // 이미지 파일
@@ -19,31 +15,7 @@ const Room = () => {
 
     const { nspName, roomName } = useParams();
 
-    const createMessageId = (socketId) => `${Date.now()}-${socketId ?? 'unknown'}`;
-
-    useEffect(() => {
-        const ws = io(`${API_URL}/${nspName}/${roomName}`);
-        setWS(ws);
-
-        const addMessage = (message) => {
-            const id = createMessageId(ws.id);
-            setMessages((prevMessages) => [...prevMessages, { id, 'type': 'text', 'content': message }]);
-        };
-
-        const addImage = (message) => {
-            console.log(message);
-            const id = createMessageId(ws.id);
-            setMessages((prevMessages) => [...prevMessages, { id, 'type': 'image', 'content': message }]);
-        }
-
-        ws.on('receive_message', addMessage);
-        ws.on('receive_image', addImage);
-        return () => {
-            ws.off('receive_message', addMessage);
-            ws.off('receive_image', addImage);
-            ws.disconnect();
-        };
-    }, []);
+    const { messages, sendMessage: emitMessage, sendImage: emitImage } = useChatRoom(nspName, roomName);
 
     const handleImageUpload = (el) => {
         const file = el.target.files[0];
@@ -63,8 +35,8 @@ const Room = () => {
         if (!trimmedMessage) {
             return;
         }
-        if (WS) {
-            WS.emit('send_message', trimmedMessage);
+        const didSend = emitMessage(trimmedMessage);
+        if (didSend) {
             setNewMessage("");
         }
     };
@@ -74,11 +46,8 @@ const Room = () => {
             alert('이미지를 입력해주세요.')
             return;
         }
-        if (WS) {
-            WS.emit('send_image', {
-                data: newImage.data,
-                mimeType: newImage.mimeType || 'image/png',
-            });
+        const didSend = emitImage(newImage);
+        if (didSend) {
             setNewImage(null);
         }
     };

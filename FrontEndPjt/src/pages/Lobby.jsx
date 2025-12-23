@@ -1,89 +1,37 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import axios from "axios";
 import { useParams, useNavigate } from 'react-router-dom';
-import io from 'socket.io-client';
 
 import ChatLog from '../components/ChatLog';
 
-import { API_URL, getUser, getRoom } from '../apis';
+import { API_URL } from '../apis';
+import useLobby from '../hooks/useLobby';
 
 import './Lobby.css'
 
 const Lobby = () => {
-    const [WS, setWS] = useState(null);
-    const [userList, setUserList] = useState([])
-    const [messages, setMessages] = useState([]);
-    const [roomList, setRoomList] = useState([]);
-    const [roomLoading, setRoomLoading] = useState(false);
     const [newMessage, setNewMessage] = useState("");
     const [roomName, setRoomName] = useState('');
     const [roomNameError, setRoomNameError] = useState('');
 
     const navigate = useNavigate();
     const { serverName } = useParams();
-
-    useEffect(() => {
-        if (!serverName) {
-            return undefined;
-        }
-
-        const ws = io(`${API_URL}/${serverName}`);
-        setWS(ws);
-        ws.on('receive_message', addMessage);
-        ws.on('connect_user', getUserData);
-        ws.on('disconnect_user', getUserData);
-        ws.on('create_room', getRoomData);
-        ws.on('delete_room', getRoomData);
-
-        getUserData();
-        getRoomData();
-
-        return () => {
-            ws.off('receive_message', addMessage);
-            ws.off('connect_user', getUserData);
-            ws.off('disconnect_user', getUserData);
-            ws.off('create_room', getRoomData);
-            ws.off('delete_room', getRoomData);
-            ws.disconnect();
-            setWS(null);
-        };
-    }, [serverName]);
-
-    const createMessageId = (socketId) => `${Date.now()}-${socketId ?? 'unknown'}`;
-
-    const addMessage = (message) => {
-        const id = createMessageId(WS?.id);
-        setMessages((prevMessages) => [...prevMessages, { id, 'type': 'text', 'content': message }]);
-    };
+    const {
+        socket,
+        userList,
+        roomList,
+        roomLoading,
+        messages,
+    } = useLobby(serverName);
 
     const sendMessage = () => {
         const trimmedMessage = newMessage.trim();
         if (!trimmedMessage) {
             return;
         }
-        if (WS) {
-            WS.emit('send_message', trimmedMessage);
+        if (socket) {
+            socket.emit('send_message', trimmedMessage);
             setNewMessage("");
-        }
-    };
-
-    const getUserData = async () => {
-        const userList = await getUser(serverName);
-        if (userList != null) {
-            setUserList(userList);
-        }
-
-    };
-
-    const getRoomData = async () => {
-        setRoomLoading(true);
-        try {
-            const roomList = await getRoom(serverName);
-            if (roomList != null) {
-                setRoomList(roomList);
-            }
-        } finally {
-            setRoomLoading(false);
         }
     };
 
@@ -125,7 +73,7 @@ const Lobby = () => {
             });
             const isSuccess = res?.data?.success;
             if (isSuccess) {
-                WS.emit('create_room', '');
+                socket?.emit('create_room', '');
                 navigate(`/${serverName}/${trimmedRoomName}`);
                 return;
             }
