@@ -220,11 +220,14 @@ app.post('/:nsp/create_room', (req, res) => {
         };
         serverEndPoint[nspName]['rooms'][roomName] = info
         nsp.on('connection', (socket) => {
-            if (info['connection_now'] < info['connection_limit']) {
-                info['connection_now'] += 1
-                if (info['connection_now'] === info['connection_limit']) {
-                    info['isAbleConnect'] = false
-                }
+            if (info['connection_now'] >= info['connection_limit']) {
+                socket.emit('server_full', '서버가 가득 찼습니다. 다른 서버를 이용해주세요.');
+                socket.disconnect(true);
+                return;
+            }
+            info['connection_now'] += 1
+            if (info['connection_now'] === info['connection_limit']) {
+                info['isAbleConnect'] = false
             }
             nsp.emit('receive_message', `${socket.id} 님이 서버에 접속했습니다.`);
 
